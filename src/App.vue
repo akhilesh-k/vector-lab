@@ -1,10 +1,16 @@
 <script setup>
-import Product from "./views/Products.vue";
+import { RouterView } from "vue-router";
+import VectorLabHeader from "./components/VectorLabHeader.vue";
+import SideBarHeader from "./components/SideBarHeader.vue";
 </script>
 
 <template>
   <main>
-    <Product />
+    <SideBarHeader />
+    <VectorLabHeader />
+    <router-view
+      style="width: 100vw; max-width: 1440px; box-sizing: border-box"
+    />
   </main>
 </template>
 

@@ -1,13 +1,17 @@
 <script setup>
-import { ref, watch, computed } from "vue";
-import Logo from "../assets/logo.svg";
+import { ref, watch, computed, onBeforeMount, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import ExcelJS from "exceljs";
+const route = useRoute();
+const router = useRouter();
+const opType = ref(route.name);
 const searchTerm = ref("");
 const vectorBoost = ref(3);
 const page = ref(1);
 const topK = ref(800);
 const items = ref(40);
 const union = ref(500);
-const debugMode = ref(true);
+const debugMode = ref(false);
 const auditMode = ref(false);
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
@@ -24,18 +28,7 @@ const hybridController = ref();
 const markAllRelevantLexical = ref(false);
 const markAllRelevantHybrid = ref(false);
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
-const emailInput = ref("");
 
-const saveAuditorEmail = () => {
-  const enteredEmail = emailInput.value.trim();
-  if (enteredEmail && enteredEmail.endsWith("@gdn-commerce.com")) {
-    localStorage.setItem("auditorEmail", enteredEmail);
-    auditorEmail.value = enteredEmail;
-  } else {
-    auditorEmail.value = "";
-    emailInput.value = "";
-  }
-};
 const lexicalMetaData = ref({
   numFound: 0,
   responseTime: 0,
@@ -73,51 +66,69 @@ const buildQuery = (prefix, userQuery) => {
   return url;
 };
 
-const downloadCSV = (products, auditResponse, auditType) => {
-  const csvData = ["Search Term,Rank,Item SKU,Name,Relevance,Comment"];
+const downloadXLSX = (products, auditResponse, auditType) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Audit Results");
 
-  // Create CSV data for each product
+  // Add header row
+  worksheet.addRow([
+    "Search Term",
+    "Rank",
+    "Item SKU",
+    "Name",
+    "Relevance",
+    "Comment",
+  ]);
+
+  // Add data rows
   products.forEach((product) => {
     product.relevance = product.relevance ? 1 : 0;
     const { position, itemSku, name, relevance, comment } = product;
 
-    // Enclose the product name in double quotes
-    const csvLine = [
+    // Check if 'comment' is an array
+    let cellComment = "";
+    if (Array.isArray(comment) && comment.length > 0) {
+      // Extract the first element from the array
+      cellComment = comment[0].trim();
+    } else if (typeof comment === "string") {
+      cellComment = comment.trim();
+    }
+
+    worksheet.addRow([
       searchTerm.value,
       position,
       itemSku,
-      `"${name}"`,
+      name,
       relevance,
-      comment,
-    ].join(",");
-
-    csvData.push(csvLine);
+      cellComment,
+    ]);
   });
 
-  // Add the audit response to the CSV data
+  // Add audit response
   if (includeNdcg.value) {
-    csvData.push(`Audit Response: ${JSON.stringify(auditResponse)}`);
+    worksheet.addRow(["Audit Response:", JSON.stringify(auditResponse)]);
   }
 
-  // Convert the array to a CSV string
-  const csvString = csvData.join("\n");
+  // Create a Blob
+  workbook.xlsx.writeBuffer().then((data) => {
+    const blob = new Blob([data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
 
-  // Create a Blob with the CSV data
-  const blob = new Blob([csvString], { type: "text/csv" });
+    // Create a download link for the Blob
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${
+      searchTerm.value
+    }_${auditType.toLowerCase()}_audit_results.xlsx`;
 
-  // Create a download link for the Blob
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${
-    searchTerm.value
-  }_${auditType.toLowerCase()}_audit_results.csv`;
+    // Trigger a click event on the download link to start the download
+    a.click();
 
-  // Trigger a click event on the download link to start the download
-  a.click();
-
-  // Clean up by revoking the Blob URL
-  window.URL.revokeObjectURL(url);
+    // Clean up by revoking the Blob URL
+    window.URL.revokeObjectURL(url);
+  });
 };
 
 const submitAudit = (auditType) => {
@@ -170,11 +181,13 @@ const submitAudit = (auditType) => {
     .then((data) => {
       // Handle the response data as needed (e.g., show a success message)
       console.log("Audit submitted successfully:", data);
-      downloadCSV(
+      downloadXLSX(
         auditType === "LEXICAL" ? lexicalProducts.value : hybridProducts.value,
         data,
         auditType
       );
+      markAllRelevantHybrid.value = false;
+      markAllRelevantLexical.value = false;
     })
     .catch((error) => {
       // Handle errors (e.g., show an error message)
@@ -210,7 +223,7 @@ const getProductsApi = (scope) => {
       channelId: "web",
       multiCateogory: true,
       intent: true,
-      updateCache: true,
+      updateCache: false,
       QUi58PyL: debugMode.value,
       userIdentifier: 500681720,
       algo: algo.value,
@@ -342,94 +355,94 @@ watch(
     }
   }
 );
+
+watch(
+  () => route.name,
+  (newRouteName) => {
+    opType.value = newRouteName;
+    auditMode.value = newRouteName === "Submit Audit";
+  }
+);
+onBeforeMount(() => {
+  opType.value = route.name;
+});
+onMounted(() => {
+  opType.value = route.name;
+});
 </script>
 
 <template>
   <main class="container">
-    <div class="flex-col auditor-email">
-      <template v-if="!auditorEmail">
-        <input
-          v-model="emailInput"
-          id="userEmail"
-          type="text"
-          placeholder="Please enter your GDN email and press Enter to start auditing..."
-          @keypress.enter="saveAuditorEmail"
-        />
-      </template>
-      <template v-else>
-        <p>Hi, {{ auditorEmail }}</p>
-      </template>
-    </div>
-    <div class="heading">
-      <h1>Blibli Vector Lab ⚡</h1>
-      <img :src="Logo" />
-    </div>
     <section class="filters">
-      <div class="flex-col">
-        <label for="searchTerm"> Enter the Search term: </label>
-        <input
-          v-model="searchTerm"
-          id="searchTerm"
-          type="text"
-          placeholder="Enter the search term"
-          @keypress.enter="getProducts"
-        />
+      <div class="query-input">
+        <div class="flex-col">
+          <label for="searchTerm"> Enter the Search term: </label>
+          <input
+            v-model="searchTerm"
+            id="searchTerm"
+            type="text"
+            placeholder="Enter the search term"
+            @keypress.enter="getProducts"
+          />
+        </div>
       </div>
-      <div class="flex-col">
-        <label for="vectorBoost"> Vector boost: </label>
-        <input
-          v-model="vectorBoost"
-          id="vectorBoost"
-          type="number"
-          placeholder="Vector boost"
-        />
-      </div>
-      <div class="flex-col">
-        <label for="page"> Page: </label>
-        <input
-          v-model="page"
-          id="page"
-          type="number"
-          placeholder="Page number"
-        />
-      </div>
-      <div class="flex-col">
-        <label for="topK"> topK: </label>
-        <input v-model="topK" id="topK" type="number" placeholder="topK" />
-      </div>
-      <div class="flex-col">
-        <label for="items"> Items: </label>
-        <input
-          v-model="items"
-          id="items"
-          type="number"
-          placeholder="Items per page"
-        />
-      </div>
-      <div class="flex-col">
-        <label for="union"> Union: </label>
-        <input v-model="union" id="union" type="number" placeholder="Union" />
-      </div>
-      <div class="flex-col">
-        <label for="algo">AB Algo:</label>
-        <select v-model="algo" id="algo">
-          <option v-for="algo in algoOptions" :key="algo" :value="algo">
-            {{ algo }}
-          </option>
-        </select>
-      </div>
-      <div class="flex">
-        <label for="debugMode"> Debug: </label>
-        <input v-model="debugMode" id="debugMode" type="checkbox" />
-      </div>
-      <div class="flex">
-        <label for="audit"> Audit: </label>
-        <input
-          v-model="auditMode"
-          id="audit"
-          type="checkbox"
-          :disabled="!auditorEmail"
-        />
+      <div class="filter-input">
+        <div v-if="!auditMode" class="flex-col">
+          <label for="vectorBoost"> Boost: </label>
+          <input
+            v-model="vectorBoost"
+            id="vectorBoost"
+            type="number"
+            placeholder="Vector boost"
+          />
+        </div>
+        <div v-if="!auditMode" class="flex-col">
+          <label for="page"> Page: </label>
+          <input
+            v-model="page"
+            id="page"
+            type="number"
+            placeholder="Page number"
+          />
+        </div>
+        <div v-if="!auditMode" class="flex-col">
+          <label for="topK"> topK: </label>
+          <input v-model="topK" id="topK" type="number" placeholder="topK" />
+        </div>
+        <div v-if="!auditMode" class="flex-col">
+          <label for="items"> Items: </label>
+          <input
+            v-model="items"
+            id="items"
+            type="number"
+            placeholder="Items per page"
+          />
+        </div>
+        <div v-if="!auditMode" class="flex-col">
+          <label for="union"> Union: </label>
+          <input v-model="union" id="union" type="number" placeholder="Union" />
+        </div>
+        <div class="flex-col">
+          <label for="algo">AB Algo:</label>
+          <select v-model="algo" id="algo">
+            <option v-for="algo in algoOptions" :key="algo" :value="algo">
+              {{ algo }}
+            </option>
+          </select>
+        </div>
+        <div class="flex">
+          <label for="debugMode"> Debug: </label>
+          <input v-model="debugMode" id="debugMode" type="checkbox" />
+        </div>
+        <div class="flex">
+          <label for="audit"> Audit: </label>
+          <input
+            v-model="auditMode"
+            id="audit"
+            type="checkbox"
+            :disabled="!auditorEmail"
+          />
+        </div>
       </div>
     </section>
     <section class="advanced-filters">
@@ -468,7 +481,9 @@ watch(
           >
             <div class="card-meta">
               <p class="rank">Rank: {{ product.position }}</p>
-              <p class="tag">{{ product.tag ? "Paling top" : "" }}</p>
+              <p v-if="product.tag" class="tag">
+                {{ product.tag ? "Paling top" : "" }}
+              </p>
             </div>
             <img :src="product.image" @click="goToPDP(product.url)" />
             <p class="product-name">
@@ -529,7 +544,9 @@ watch(
           >
             <div class="card-meta">
               <p class="rank">Rank: {{ product.position }}</p>
-              <p class="tag">{{ product.tag ? "Paling top" : "" }}</p>
+              <p v-if="product.tag" class="tag">
+                {{ product.tag ? "Paling top" : "" }}
+              </p>
             </div>
             <img :src="product.image" @click="goToPDP(product.url)" />
             <p class="product-name">
@@ -585,26 +602,23 @@ watch(
   height: 100%;
   box-sizing: border-box;
 }
-.heading {
-  font-size: 20px;
-  margin: 14px 0;
+.filter-input {
   display: flex;
+  justify-content: space-evenly;
   align-items: center;
-  max-width: 90%;
-  justify-content: space-between;
-}
-.heading > img {
-  width: 200px;
-  height: 70px;
+  gap: 16px;
 }
 .filters,
 .advanced-filters,
 .products,
 .products-container {
+  align-items: center;
   width: 100%;
-  flex-wrap: wrap;
   display: flex;
   gap: 16px;
+}
+.products {
+  flex-wrap: wrap;
 }
 .advanced-filters,
 .products-container {
@@ -634,16 +648,16 @@ watch(
   gap: 8px;
 }
 input[type="text"] {
-  height: 40px;
+  height: 32px;
   border-radius: 4px;
   background-color: rgb(240, 242, 246);
   padding: 0px 8px;
   box-sizing: border-box;
   border: rgb(240, 242, 246);
-  width: 848px;
+  width: 500px;
 }
 input[type="number"] {
-  height: 40px;
+  height: 32px;
   width: 80px;
   border-radius: 4px;
   background-color: rgb(240, 242, 246);
@@ -652,13 +666,14 @@ input[type="number"] {
   border: rgb(240, 242, 246);
 }
 select {
-  height: 40px;
+  height: 32px;
   width: 100px;
   border-radius: 4px;
   background-color: rgb(240, 242, 246);
   padding: 0px 8px;
   box-sizing: border-box;
   border: rgb(240, 242, 246);
+  border-right: 16px solid transparent;
 }
 input[type="checkbox"] {
   position: relative;
@@ -748,6 +763,9 @@ textarea {
   padding: 12px 8px;
   box-sizing: border-box;
   border-radius: 6px;
+}
+.filters {
+  justify-content: space-between;
 }
 button {
   cursor: pointer;
