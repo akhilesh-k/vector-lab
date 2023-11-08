@@ -17,7 +17,12 @@ const topK = ref(800);
 const items = ref(40);
 const union = ref(500);
 const debugMode = ref(false);
-const auditMode = ref(isOnAuditRoute.value && !isOnVectorRoute.value);
+const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
+console.log(auditorEmail.value);
+
+const auditMode = ref(
+  isOnAuditRoute.value && !isOnVectorRoute.value && auditorEmail.value?.length
+);
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
 const algo = ref("control");
@@ -32,7 +37,6 @@ const hybridController = ref();
 
 const markAllRelevantLexical = ref(false);
 const markAllRelevantHybrid = ref(false);
-const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
 
 const lexicalMetaData = ref({
   numFound: 0,
@@ -306,7 +310,7 @@ const pushToAuditPage = (event) => {
 };
 
 const getPageSubHeading = () => {
-  if (auditMode.value) {
+  if (isOnAuditRoute.value) {
     return "Audit Results";
   } else {
     return "Vector Search";
@@ -609,7 +613,7 @@ watch(
 }
 .container {
   padding: 0px 80px;
-  margin-top: 30px;
+  margin-top: 14px;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
