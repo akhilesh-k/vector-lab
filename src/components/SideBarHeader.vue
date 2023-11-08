@@ -1,11 +1,13 @@
 <script setup>
-import { ref } from "vue";
+import { onBeforeMount, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import SidebarLogoOpen from "../assets/icons/sidebar-open.svg";
 import SidebarLogoClose from "../assets/icons/sidebar-close.svg";
 import BlibliHalfLogo from "../assets/icons/blibli-half-logo.png";
 const router = useRouter();
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
+const sideBar = ref();
+const sideBarLogo = ref();
 
 const isCollapsed = ref(true);
 
@@ -16,6 +18,16 @@ const toggleSidebar = () => {
 const navigateTo = (url) => {
   router.push(url);
   isCollapsed.value = !isCollapsed.value;
+};
+
+const collapseWhenClickedOutside = (event) => {
+  if (
+    sideBar.value &&
+    !sideBar.value.contains(event.target) &&
+    event.target !== sideBarLogo.value
+  ) {
+    isCollapsed.value = true;
+  }
 };
 const sideBarUrls = [
   { name: "Vector Search", url: "vector-search" },
@@ -30,10 +42,16 @@ const convertEmailToName = (email) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 };
+onMounted(() => {
+  window.addEventListener("click", collapseWhenClickedOutside);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("click", collapseWhenClickedOutside);
+});
 </script>
 
 <template>
-  <div class="sidebar" :class="{ collapsed: isCollapsed }">
+  <div class="sidebar" :class="{ collapsed: isCollapsed }" ref="sideBar">
     <div class="sidebar-header">
       <img
         v-if="!isCollapsed"
@@ -44,13 +62,14 @@ const convertEmailToName = (email) => {
       <p v-if="!isCollapsed">Vector Lab</p>
       <img
         v-if="!isCollapsed"
-        @click="toggleSidebar"
+        @click.stop="toggleSidebar"
         class="sidebar-btn"
         :src="SidebarLogoClose"
       />
       <img
         v-else
-        @click="toggleSidebar"
+        ref="sideBarLogo"
+        @click.stop="toggleSidebar"
         class="sidebar-btn"
         :src="SidebarLogoOpen"
       />

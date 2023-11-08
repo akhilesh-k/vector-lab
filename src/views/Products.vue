@@ -1,10 +1,15 @@
 <script setup>
 import { ref, watch, computed, onBeforeMount, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useRouterMetaDataStore } from "@/store";
 import ExcelJS from "exceljs";
 const route = useRoute();
 const router = useRouter();
-const opType = ref(route.name);
+const metaDataStore = useRouterMetaDataStore();
+const isOnAuditRoute = computed(() => metaDataStore.metaData.value.audit);
+const isOnVectorRoute = computed(
+  () => metaDataStore.metaData.value.vectorSearch && !auditMode.value
+);
 const searchTerm = ref("");
 const vectorBoost = ref(3);
 const page = ref(1);
@@ -12,7 +17,7 @@ const topK = ref(800);
 const items = ref(40);
 const union = ref(500);
 const debugMode = ref(false);
-const auditMode = ref(false);
+const auditMode = ref(isOnAuditRoute.value && !isOnVectorRoute.value);
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
 const algo = ref("control");
@@ -40,11 +45,16 @@ const hybridMetaData = ref({
 
 const lexicalHeading = computed(() => {
   const { numFound, responseTime } = lexicalMetaData.value;
-  return `Displaying ${
-    items.value
-  } Lexical results out of ${numFound} products in ${
-    Math.round(responseTime * 100) / 100
-  } seconds`;
+  console.log(lexicalMetaData.value);
+  if (numFound !== 0) {
+    return `Displaying ${
+      items.value
+    } Lexical results out of ${numFound} products in ${
+      Math.round(responseTime * 100) / 100
+    } seconds`;
+  } else {
+    return `No results found. Search took ${responseTime} seconds`;
+  }
 });
 const hybridHeading = computed(() => {
   const { numFound, responseTime } = hybridMetaData.value;
@@ -179,8 +189,6 @@ const submitAudit = (auditType) => {
       return response.json();
     })
     .then((data) => {
-      // Handle the response data as needed (e.g., show a success message)
-      console.log("Audit submitted successfully:", data);
       downloadXLSX(
         auditType === "LEXICAL" ? lexicalProducts.value : hybridProducts.value,
         data,
@@ -289,6 +297,14 @@ const goToPDP = (url) => {
   window.open(url, "_blank");
 };
 
+const pushToAuditPage = (event) => {
+  if (event.target.value === "on" && auditMode.value) {
+    router.push("/audit");
+  } else {
+    router.push("/vector-search");
+  }
+};
+
 watch(
   () => [
     isLexicalSearch.value,
@@ -332,7 +348,6 @@ watch(
       lexicalProducts.value.forEach((product) => {
         product.relevance = true;
       });
-      console.log(lexicalProducts.value);
     } else {
       lexicalProducts.value.forEach((product) => {
         product.relevance = false;
@@ -355,20 +370,6 @@ watch(
     }
   }
 );
-
-watch(
-  () => route.name,
-  (newRouteName) => {
-    opType.value = newRouteName;
-    auditMode.value = newRouteName === "Submit Audit";
-  }
-);
-onBeforeMount(() => {
-  opType.value = route.name;
-});
-onMounted(() => {
-  opType.value = route.name;
-});
 </script>
 
 <template>
@@ -386,8 +387,9 @@ onMounted(() => {
           />
         </div>
       </div>
+
       <div class="filter-input">
-        <div v-if="!auditMode" class="flex-col">
+        <div v-if="isOnVectorRoute" class="flex-col">
           <label for="vectorBoost"> Boost: </label>
           <input
             v-model="vectorBoost"
@@ -396,7 +398,7 @@ onMounted(() => {
             placeholder="Vector boost"
           />
         </div>
-        <div v-if="!auditMode" class="flex-col">
+        <div v-if="isOnVectorRoute" class="flex-col">
           <label for="page"> Page: </label>
           <input
             v-model="page"
@@ -405,11 +407,11 @@ onMounted(() => {
             placeholder="Page number"
           />
         </div>
-        <div v-if="!auditMode" class="flex-col">
+        <div v-if="isOnVectorRoute" class="flex-col">
           <label for="topK"> topK: </label>
           <input v-model="topK" id="topK" type="number" placeholder="topK" />
         </div>
-        <div v-if="!auditMode" class="flex-col">
+        <div v-if="isOnVectorRoute" class="flex-col">
           <label for="items"> Items: </label>
           <input
             v-model="items"
@@ -418,7 +420,7 @@ onMounted(() => {
             placeholder="Items per page"
           />
         </div>
-        <div v-if="!auditMode" class="flex-col">
+        <div v-if="isOnVectorRoute" class="flex-col">
           <label for="union"> Union: </label>
           <input v-model="union" id="union" type="number" placeholder="Union" />
         </div>
@@ -441,6 +443,7 @@ onMounted(() => {
             id="audit"
             type="checkbox"
             :disabled="!auditorEmail"
+            @change="pushToAuditPage"
           />
         </div>
       </div>
@@ -790,7 +793,7 @@ button {
   flex-direction: rows;
   justify-content: space-between;
   align-items: flex-start;
-  max-width: 745px;
+  max-width: calc(100% - 104px);
 }
 .card-meta {
   display: flex;

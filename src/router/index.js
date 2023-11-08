@@ -1,25 +1,25 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { useRouter } from "vue-router";
+import { useRouterMetaDataStore } from "@/store";
+
 import Products from "@/views/Products.vue";
 import Configure from "@/views/Configure.vue";
 import AuditHistory from "@/views/AuditHistory.vue";
 import ReleaseNotes from "@/views/ReleaseNotes.vue";
-const router = useRouter();
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: "/vector-search",
       component: Products,
-    },
-    {
-      name: "Vector Search",
-      path: "/",
       meta: {
         audit: false,
         vectorSearch: true,
       },
+    },
+    {
+      name: "Vector Search",
+      path: "/",
       redirect: () => {
         return "/vector-search";
       },
@@ -49,5 +49,8 @@ export default createRouter({
   ],
 });
 router.beforeEach((to, from, next) => {
-  setRouteMetaData(to)
+  const metaDataStore = useRouterMetaDataStore();
+  metaDataStore.metaData.value = to.meta;
+  next();
 });
+export default router;
