@@ -18,7 +18,8 @@ const items = ref(40);
 const union = ref(500);
 const debugMode = ref(false);
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
-console.log(auditorEmail.value);
+const lexicalCallDone = ref(false);
+const hybridCallDone = ref(false);
 
 const auditMode = ref(
   isOnAuditRoute.value && !isOnVectorRoute.value && auditorEmail.value?.length
@@ -41,32 +42,33 @@ const markAllRelevantHybrid = ref(false);
 const lexicalMetaData = ref({
   numFound: 0,
   responseTime: 0,
+  items: 0,
 });
 const hybridMetaData = ref({
   numFound: 0,
   responseTime: 0,
+  items: 0,
 });
 
 const lexicalHeading = computed(() => {
-  const { numFound, responseTime } = lexicalMetaData.value;
-  console.log(lexicalMetaData.value);
-  if (numFound !== 0) {
-    return `Displaying ${
-      items.value
-    } Lexical results out of ${numFound} products in ${
+  const { numFound, responseTime, items } = lexicalMetaData.value;
+  if (numFound != 0 && items != 0) {
+    return `Displaying ${items} Lexical results out of ${numFound} products in ${
       Math.round(responseTime * 100) / 100
     } seconds`;
   } else {
-    return `No results found. Search took ${responseTime} seconds`;
+    return `No lexical results found. Search took ${responseTime} seconds`;
   }
 });
 const hybridHeading = computed(() => {
-  const { numFound, responseTime } = hybridMetaData.value;
-  return `Displaying ${
-    items.value
-  } Hybrid results out of ${numFound} products in ${
-    Math.round(responseTime * 100) / 100
-  }s`;
+  const { numFound, responseTime, items } = hybridMetaData.value;
+  if (numFound != 0 && items != 0) {
+    return `Displaying ${items} Hybrid results out of ${numFound} products in ${
+      Math.round(responseTime * 100) / 100
+    } seconds`;
+  } else {
+    return `No hybrid results found. Search took ${responseTime} seconds`;
+  }
 });
 
 const buildQuery = (prefix, userQuery) => {
@@ -202,7 +204,6 @@ const submitAudit = (auditType) => {
       markAllRelevantLexical.value = false;
     })
     .catch((error) => {
-      // Handle errors (e.g., show an error message)
       console.error("Error while submitting the audit:", error);
     });
 };
@@ -217,9 +218,11 @@ const getProductsApi = (scope) => {
 
   if (scope === "LEXICAL") {
     lexicalProducts.value = [];
+    lexicalCallDone.value = false;
   }
   if (scope === "HYBRID") {
     hybridProducts.value = [];
+    hybridCallDone.value = false;
   }
   if (searchTerm.value?.length) {
     const urlPrefix = "http://xsearch-solr-vector-2.qa2-sg.cld:5000/search";
@@ -266,19 +269,23 @@ const getProductsApi = (scope) => {
       })
       .then((data) => {
         if (scope === "LEXICAL") {
+          lexicalCallDone.value = true;
           lexicalProducts.value = [];
           lexicalProducts.value = data?.products;
           lexicalMetaData.value = {
             numFound: data?.numFound,
             responseTime: data?.responseTime,
+            items: data?.products.length,
           };
         }
         if (scope === "HYBRID") {
+          hybridCallDone.value = true;
           hybridProducts.value = [];
           hybridProducts.value = data?.products;
           hybridMetaData.value = {
             numFound: data?.numFound,
             responseTime: data?.responseTime,
+            items: data?.products.length,
           };
         }
       })
@@ -473,7 +480,7 @@ watch(
     </section>
     <section class="products-container">
       <div class="wrapper">
-        <div v-if="lexicalProducts.length" class="flex-col">
+        <div v-if="lexicalCallDone" class="flex-col">
           {{ lexicalHeading }}
           <div v-if="auditMode" class="audit-header">
             <div class="flex">
@@ -536,7 +543,7 @@ watch(
         </div>
       </div>
       <div class="wrapper">
-        <div v-if="hybridProducts.length" class="flex-col">
+        <div v-if="hybridCallDone" class="flex-col">
           {{ hybridHeading }}
           <div v-if="auditMode" class="audit-header">
             <div class="flex">
@@ -640,6 +647,7 @@ watch(
 .products-container {
   margin: 24px 0px;
   justify-content: space-between;
+  align-items: flex-start;
 }
 .advanced-filters > .flex,
 .products-container > .products {
