@@ -305,6 +305,14 @@ const pushToAuditPage = (event) => {
   }
 };
 
+const getPageSubHeading = () => {
+  if (auditMode.value) {
+    return "Audit Results";
+  } else {
+    return "Vector Search";
+  }
+};
+
 watch(
   () => [
     isLexicalSearch.value,
@@ -374,6 +382,7 @@ watch(
 
 <template>
   <main class="container">
+    <h3>{{ getPageSubHeading() }}</h3>
     <section class="filters">
       <div class="query-input">
         <div class="flex-col">
@@ -600,7 +609,7 @@ watch(
 }
 .container {
   padding: 0px 80px;
-  margin-top: 60px;
+  margin-top: 30px;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
