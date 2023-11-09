@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
     </div>
     <footer class="sidebar-footer" v-show="!isCollapsed">
       <span v-if="auditorEmail">Hi {{ convertEmailToName(auditorEmail) }}</span>
-      <span>Vector Lab v1.1.0</span>
+      <span>Vector Lab v1.2.0</span>
     </footer>
   </div>
 </template>
