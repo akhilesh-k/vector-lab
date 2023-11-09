@@ -22,7 +22,9 @@ const lexicalCallDone = ref(false);
 const hybridCallDone = ref(false);
 
 const auditMode = ref(
-  isOnAuditRoute.value && !isOnVectorRoute.value && auditorEmail.value?.length
+  isOnAuditRoute.value &&
+    !isOnVectorRoute.value &&
+    auditorEmail.value?.length > 0
 );
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
@@ -701,7 +703,7 @@ select {
 }
 input[type="checkbox"] {
   position: relative;
-  border: 2px solid rgb(246, 51, 102);
+  border: 2px solid #0072ff;
   border-radius: 2px;
   background: none;
   cursor: pointer;
@@ -719,7 +721,7 @@ input[type="checkbox"]:hover {
   opacity: 1;
 }
 input[type="checkbox"]:checked {
-  background-color: rgb(246, 51, 102);
+  background-color: #0072ff;
   opacity: 1;
 }
 input[type="checkbox"]:before {
