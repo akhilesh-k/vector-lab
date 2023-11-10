@@ -16,11 +16,20 @@ const pushToRoute = (route) => {
       <ul>
         <li>
           Audit Report: We can see the auditor's search terms by filtering by
-          Auditor's name. >
+          Auditor's name.
         </li>
         <li>
           Date Range filter: We have given a date range filter on the Audit
           report page to filter the results based on the date range selected.
+        </li>
+      </ul>
+      <p>Bug Fixes:</p>
+      <ul>
+        <li>
+          Audit mode checkbox while navigating from Sidebar: In case of
+          navigating to the perform Audit page from the vector search page,
+          audit mode checkbox was not selected by default. This issue has been
+          fixed in the 10th November deployment.
         </li>
       </ul>
 
