@@ -23,6 +23,10 @@ const router = createRouter({
       redirect: () => {
         return "/vector-search";
       },
+      meta: {
+        audit: false,
+        vectorSearch: true,
+      },
     },
     {
       name: "Submit Audit",

@@ -1,9 +1,23 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import DatePicker from "vue3-datepicker";
 
+const startDate = ref(null);
+const endDate = ref(null);
+
+const defaultStartDate = new Date();
+defaultStartDate.setDate(defaultStartDate.getDate() - 15);
+startDate.value = defaultStartDate;
+endDate.value = new Date();
+
+const selectedUser = ref(localStorage.getItem("auditorEmail") || "");
+const auditedTerms = ref([]);
 const auditors = ref([]);
 const topRelevantLexicalSearchTerms = ref([]);
 const topRelevantHybridSearchTerms = ref([]);
+const applyDateFilter = () => {
+  // implementation to be done
+};
 
 const topIrrelevantLexicalSearchTerms = ref([]);
 const topIrrelevantHybridSearchTerms = ref([]);
@@ -15,6 +29,28 @@ const convertEmailToName = (email) => {
     .join(" ");
 };
 const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000";
+
+const filterSearchTermsByUser = async () => {
+  try {
+    if (selectedUser.value) {
+      const response = await fetch(
+        `${apiUrl}/fetch-audited-terms?auditor=${selectedUser.value.auditor}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        auditedTerms.value = data.audited_terms;
+      } else {
+        auditedTerms.value = [];
+      }
+    } else {
+      auditedTerms.value = [];
+    }
+  } catch (error) {
+    console.error("Error filtering search terms by user:", error);
+    auditedTerms.value = [];
+  }
+};
 
 onMounted(async () => {
   try {
@@ -40,7 +76,24 @@ onMounted(async () => {
 
 <template>
   <main class="container">
-    <h3>Audit Reports and History</h3>
+    <section class="header">
+      <h3>Audit Reports and History</h3>
+      <div class="filters">
+        <h4>Filter by Date</h4>
+        <div class="date-picker">
+          <label for="startDate">Start Date:</label>
+          <DatePicker v-model="startDate" type="date" id="startDate" />
+          <label for="endDate">End Date:</label>
+          <DatePicker
+            :upperLimit="new Date()"
+            v-model="endDate"
+            type="date"
+            id="endDate"
+          />
+          <button @click="applyDateFilter">Apply</button>
+        </div>
+      </div>
+    </section>
 
     <section class="auditors">
       <h4>Auditors and Audit Count</h4>
@@ -58,6 +111,37 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="user-filter">
+      <h4>Find Search terms audited by User</h4>
+      <div class="user-selector">
+        <label for="selectUser">Select User:</label>
+        <select v-model="selectedUser" id="selectUser">
+          <option value="">All Users</option>
+          <option
+            v-for="userEmail in auditors"
+            :key="userEmail"
+            :value="userEmail"
+          >
+            {{ convertEmailToName(userEmail.auditor) }}
+          </option>
+        </select>
+        <button @click="filterSearchTermsByUser">Apply</button>
+      </div>
+    </section>
+
+    <!-- Display Search Terms by User -->
+    <section
+      v-if="selectedUser && auditedTerms.length"
+      class="search-terms-by-user"
+    >
+      <h5>
+        Search Terms Audited by {{ convertEmailToName(selectedUser.auditor) }}
+      </h5>
+      <ul>
+        <li v-for="term in auditedTerms" :key="term">{{ term }}</li>
+      </ul>
     </section>
 
     <section class="search-terms">
@@ -113,6 +197,9 @@ onMounted(async () => {
 
 <style scoped>
 * {
+  --vdp-selected-bg-color: #0072ff;
+  --vdp-hover-bg-color: #0072ff;
+  --vdp-heading-hover-color: rgba(0, 114, 255, 0.05);
   outline: none;
   font-family: Source Sans Pro, sans-serif;
 }
@@ -177,5 +264,78 @@ onMounted(async () => {
 
 .search-terms-table td ul li {
   margin-bottom: 5px;
+}
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: small;
+  font-family: Source Sans Pro, sans-serif;
+}
+
+.date-picker label {
+  display: block;
+  margin-bottom: 5px;
+  font-family: Source Sans Pro, sans-serif;
+}
+
+.date-picker button {
+  background-color: #0072ff;
+  color: white;
+  border-radius: 4px;
+  padding: 2px 10px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  height: 24px;
+}
+
+.date-picker button:hover {
+  background-color: #0056c1;
+}
+.header {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.user-selector {
+  display: flex;
+  gap: 14px;
+  padding: 24px 0;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.user-selector label {
+  margin-right: 14px;
+  font-family: Source Sans Pro, sans-serif;
+}
+
+.user-selector select {
+  height: 32px;
+  width: 600px;
+  border-radius: 4px;
+  background-color: rgb(240, 242, 246);
+  padding: 0px 8px;
+  box-sizing: border-box;
+  border: rgb(240, 242, 246);
+  border-right: 16px solid transparent;
+}
+
+.user-selector button {
+  background-color: #0072ff;
+  color: white;
+  border-radius: 4px;
+  padding: 2px 10px;
+  border: none;
+  font-weight: 500;
+  height: 30px;
+  cursor: pointer;
+}
+
+.user-selector button:hover {
+  background-color: #0056c1;
 }
 </style>

@@ -11,7 +11,6 @@ const sideBarLogo = ref();
 
 const isCollapsed = ref(true);
 
-// Function to toggle the sidebar's collapsed state
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
 };

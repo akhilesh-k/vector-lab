@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed, onBeforeMount, onMounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRouterMetaDataStore } from "@/store";
 import ExcelJS from "exceljs";
@@ -103,10 +103,8 @@ const downloadXLSX = (products, auditResponse, auditType) => {
     product.relevance = product.relevance ? 1 : 0;
     const { position, itemSku, name, relevance, comment } = product;
 
-    // Check if 'comment' is an array
     let cellComment = "";
     if (Array.isArray(comment) && comment.length > 0) {
-      // Extract the first element from the array
       cellComment = comment[0].trim();
     } else if (typeof comment === "string") {
       cellComment = comment.trim();
@@ -150,7 +148,6 @@ const downloadXLSX = (products, auditResponse, auditType) => {
 };
 
 const submitAudit = (auditType) => {
-  // Prepare the audit data for the "Hybrid" section
   let auditData = {};
   if (auditType === "LEXICAL") {
     auditData = {
@@ -182,7 +179,6 @@ const submitAudit = (auditType) => {
   }
   const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000/submit-audit";
 
-  // Make an HTTP POST request using the fetch API
   fetch(apiUrl, {
     method: "POST",
     headers: {
@@ -388,6 +384,17 @@ watch(
       hybridProducts.value.forEach((product) => {
         product.relevance = false;
       });
+    }
+  }
+);
+watch(
+  () => route.meta,
+  () => {
+    if (route.meta.audit) {
+      auditMode.value = true;
+    }
+    if (route.meta.vectorSearch) {
+      auditMode.value = false;
     }
   }
 );

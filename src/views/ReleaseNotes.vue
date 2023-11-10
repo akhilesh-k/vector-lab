@@ -10,6 +10,20 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 1.3.0</h4>
+      <h5>10th November 2023</h5>
+      <p>Now which search terms are audited by auditors can be found</p>
+      <ul>
+        <li>
+          Audit Report: We can see the auditor's search terms by filtering by
+          Auditor's name. >
+        </li>
+        <li>
+          Date Range filter: We have given a date range filter on the Audit
+          report page to filter the results based on the date range selected.
+        </li>
+      </ul>
+
       <h4>Version 1.2.0</h4>
       <h5>9th November 2023</h5>
       <p>We are excited to introduce the following features:</p>
@@ -97,8 +111,8 @@ const pushToRoute = (route) => {
         </li>
       </ul>
 
-      <h4>Version 0.3.0</h4>
-      <h5>17th October 2023</h5>
+      <h4>Version 0.4.0</h4>
+      <h5>18th October 2023</h5>
       <p>Now see hybrid search for various A/B algorithms</p>
       <ul>
         <li>
