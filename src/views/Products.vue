@@ -513,8 +513,14 @@ watch(
           >
             <div class="card-meta">
               <p class="rank">Rank: {{ product.position }}</p>
-              <p v-if="product.tag" class="tag">
-                {{ product.tag ? "Paling top" : "" }}
+              <p v-if="product.tag" class="tag" :id="product.tag">
+                {{
+                  product.tag === "TRENDING"
+                    ? "Paling top"
+                    : product.tag === "MANUAL_MERCHANDISED"
+                    ? "Pilihan Blibli"
+                    : ""
+                }}
               </p>
             </div>
             <img :src="product.image" @click="goToPDP(product.url)" />
@@ -576,8 +582,14 @@ watch(
           >
             <div class="card-meta">
               <p class="rank">Rank: {{ product.position }}</p>
-              <p v-if="product.tag" class="tag">
-                {{ product.tag ? "Paling top" : "" }}
+              <p v-if="product.tag" class="tag" :id="product.tag">
+                {{
+                  product.tag === "TRENDING"
+                    ? "Paling top"
+                    : product.tag === "MANUAL_MERCHANDISED"
+                    ? "Pilihan Blibli"
+                    : ""
+                }}
               </p>
             </div>
             <img :src="product.image" @click="goToPDP(product.url)" />
@@ -834,11 +846,17 @@ button {
 }
 .card-meta > .tag {
   margin: 0px;
-  background-color: #fe9a36;
+
   padding: 2px 4px;
   color: white;
   border-radius: 4px;
   font-size: 11px;
+}
+#TRENDING {
+  background-color: #fe9a36;
+}
+#MANUAL_MERCHANDISED {
+  background-color: #09acde;
 }
 
 .card-meta > .rank {

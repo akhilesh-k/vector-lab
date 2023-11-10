@@ -22,6 +22,10 @@ const pushToRoute = (route) => {
           Date Range filter: We have given a date range filter on the Audit
           report page to filter the results based on the date range selected.
         </li>
+        <li>
+          Pilihan Blibli: Now we can see the Manual merchandised products tag in
+          the product card.
+        </li>
       </ul>
       <p>Bug Fixes:</p>
       <ul>
