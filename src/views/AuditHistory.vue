@@ -4,7 +4,7 @@ import DatePicker from "vue3-datepicker";
 
 const startDate = ref(null);
 const endDate = ref(null);
-const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000";
+const apiUrl = "http://127.0.0.1:5001";
 
 const defaultStartDate = new Date();
 defaultStartDate.setDate(defaultStartDate.getDate() - 7);
@@ -138,8 +138,8 @@ onMounted(async () => {
         <tbody>
           <tr v-for="auditor in auditors" :key="auditor.auditor">
             <td>{{ convertEmailToName(auditor.auditor) }}</td>
-            <td>{{ auditor.hybrid_count }}</td>
             <td>{{ auditor.lexical_count }}</td>
+            <td>{{ auditor.hybrid_count }}</td>
             <td>{{ auditor.total_audit }}</td>
           </tr>
         </tbody>
