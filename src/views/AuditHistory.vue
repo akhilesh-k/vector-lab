@@ -4,9 +4,10 @@ import DatePicker from "vue3-datepicker";
 
 const startDate = ref(null);
 const endDate = ref(null);
+const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000";
 
 const defaultStartDate = new Date();
-defaultStartDate.setDate(defaultStartDate.getDate() - 15);
+defaultStartDate.setDate(defaultStartDate.getDate() - 7);
 startDate.value = defaultStartDate;
 endDate.value = new Date();
 
@@ -15,12 +16,27 @@ const auditedTerms = ref([]);
 const auditors = ref([]);
 const topRelevantLexicalSearchTerms = ref([]);
 const topRelevantHybridSearchTerms = ref([]);
-const applyDateFilter = () => {
-  // implementation to be done
-};
-
 const topIrrelevantLexicalSearchTerms = ref([]);
 const topIrrelevantHybridSearchTerms = ref([]);
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+const applyDateFilter = async () => {
+  try {
+    const filterUrl = `${apiUrl}/fetch-auditors?start_date=${formatDate(
+      startDate.value
+    )}&end_date=${formatDate(endDate.value)}`;
+    const response = await fetch(filterUrl);
+    const data = await response.json();
+    auditors.value = data.auditors;
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
 
 const convertEmailToName = (email) => {
   const parts = email.split("@")[0].split(".");
@@ -28,7 +44,6 @@ const convertEmailToName = (email) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 };
-const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000";
 
 const filterSearchTermsByUser = async () => {
   try {
@@ -36,13 +51,8 @@ const filterSearchTermsByUser = async () => {
       const response = await fetch(
         `${apiUrl}/fetch-audited-terms?auditor=${selectedUser.value.auditor}`
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        auditedTerms.value = data.audited_terms;
-      } else {
-        auditedTerms.value = [];
-      }
+      const data = await response.json();
+      auditedTerms.value = data.audited_terms;
     } else {
       auditedTerms.value = [];
     }
@@ -54,11 +64,15 @@ const filterSearchTermsByUser = async () => {
 
 onMounted(async () => {
   try {
-    const auditorsResponse = await fetch(apiUrl + "/fetch-auditors");
+    const auditorsResponse = await fetch(
+      `${apiUrl}/fetch-auditors?start_date=${formatDate(
+        startDate.value
+      )}&end_date=${formatDate(endDate.value)}`
+    );
     const auditorsData = await auditorsResponse.json();
     auditors.value = auditorsData.auditors;
 
-    const searchTermsResponse = await fetch(apiUrl + "/fetch-top-search-terms");
+    const searchTermsResponse = await fetch(`${apiUrl}/fetch-top-search-terms`);
     const searchTermsData = await searchTermsResponse.json();
     topRelevantLexicalSearchTerms.value =
       searchTermsData.topRelevantLexicalSearchTerms;
