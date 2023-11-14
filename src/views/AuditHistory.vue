@@ -130,13 +130,17 @@ onMounted(async () => {
         <thead>
           <tr>
             <th>Auditor</th>
-            <th>Audit Count</th>
+            <th>Lexical Audit Count</th>
+            <th>Hybrid Audit Count</th>
+            <th>Total Audit Count</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="auditor in auditors" :key="auditor.auditor">
             <td>{{ convertEmailToName(auditor.auditor) }}</td>
-            <td>{{ auditor.auditCount }}</td>
+            <td>{{ auditor.hybrid_count }}</td>
+            <td>{{ auditor.lexical_count }}</td>
+            <td>{{ auditor.total_audit }}</td>
           </tr>
         </tbody>
       </table>

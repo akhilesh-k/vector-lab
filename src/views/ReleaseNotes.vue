@@ -18,6 +18,10 @@ const pushToRoute = (route) => {
       </p>
       <ul>
         <li>
+          Audit Progress: Now see the auditing progress via Audited search
+          term's count for Lexical and Hybrid.
+        </li>
+        <li>
           Auditor's search term: Lexical and Hybrid search terms are displayed
           in separate layouts.
         </li>
