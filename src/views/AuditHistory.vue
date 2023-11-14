@@ -54,7 +54,7 @@ const filterSearchTermsByUser = async (isNextPage) => {
   }
   try {
     if (selectedUser.value) {
-      let filterSearchTermByUserUrl = `http://127.0.0.1:5001/fetch-audited-terms?auditor=${
+      let filterSearchTermByUserUrl = `${apiUrl}/fetch-audited-terms?auditor=${
         selectedUser.value.auditor === undefined
           ? selectedUser.value
           : selectedUser.value.auditor
