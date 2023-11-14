@@ -4,7 +4,7 @@ import DatePicker from "vue3-datepicker";
 
 const startDate = ref(null);
 const endDate = ref(null);
-const apiUrl = "http://127.0.0.1:5001";
+const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000";
 
 const defaultStartDate = new Date();
 defaultStartDate.setDate(defaultStartDate.getDate() - 7);
