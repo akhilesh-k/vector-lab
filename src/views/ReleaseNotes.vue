@@ -10,6 +10,29 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 1.4.0</h4>
+      <h5>14th November 2023</h5>
+      <p>
+        Now date filters can be applied to find the search terms audited by
+        auditors within a time period.
+      </p>
+      <ul>
+        <li>
+          Auditor's search term: Lexical and Hybrid search terms are displayed
+          in separate layouts.
+        </li>
+        <li>
+          Date Range filter: Along with the audit count, date range filters can
+          be applied to the search terms.
+        </li>
+      </ul>
+      <p>Bug Fixes:</p>
+      <ul>
+        <li>
+          Date Range filter: Issues while applying the date range filters on the
+          audit count are now fixed.
+        </li>
+      </ul>
       <h4>Version 1.3.0</h4>
       <h5>10th November 2023</h5>
       <p>Now which search terms are audited by auditors can be found</p>

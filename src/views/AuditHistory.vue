@@ -12,12 +12,14 @@ startDate.value = defaultStartDate;
 endDate.value = new Date();
 
 const selectedUser = ref(localStorage.getItem("auditorEmail") || "");
+const auditorEmail = localStorage.getItem("auditorEmail");
 const auditedTerms = ref([]);
 const auditors = ref([]);
 const topRelevantLexicalSearchTerms = ref([]);
 const topRelevantHybridSearchTerms = ref([]);
 const topIrrelevantLexicalSearchTerms = ref([]);
 const topIrrelevantHybridSearchTerms = ref([]);
+const auditorSearchTermPage = ref(0);
 
 function formatDate(date) {
   const year = date.getFullYear();
@@ -33,6 +35,7 @@ const applyDateFilter = async () => {
     const response = await fetch(filterUrl);
     const data = await response.json();
     auditors.value = data.auditors;
+    filterSearchTermsByUser(false);
   } catch (error) {
     console.error("Error:", error);
   }
@@ -45,12 +48,23 @@ const convertEmailToName = (email) => {
     .join(" ");
 };
 
-const filterSearchTermsByUser = async () => {
+const filterSearchTermsByUser = async (isNextPage) => {
+  if (isNextPage) {
+    auditorSearchTermPage.value += 1;
+  }
   try {
     if (selectedUser.value) {
-      const response = await fetch(
-        `${apiUrl}/fetch-audited-terms?auditor=${selectedUser.value.auditor}`
-      );
+      let filterSearchTermByUserUrl = `http://127.0.0.1:5001/fetch-audited-terms?auditor=${
+        selectedUser.value.auditor === undefined
+          ? selectedUser.value
+          : selectedUser.value.auditor
+      }&page=${auditorSearchTermPage.value}&per_page=${30}`;
+      if (startDate.value && endDate.value) {
+        filterSearchTermByUserUrl = `${filterSearchTermByUserUrl}&start_date=${formatDate(
+          startDate.value
+        )}&end_date=${formatDate(endDate.value)}`;
+      }
+      const response = await fetch(filterSearchTermByUserUrl);
       const data = await response.json();
       auditedTerms.value = data.audited_terms;
     } else {
@@ -82,6 +96,7 @@ onMounted(async () => {
       searchTermsData.topIrrelevantLexicalSearchTerms;
     topIrrelevantHybridSearchTerms.value =
       searchTermsData.topIrrelevantHybridSearchTerms;
+    filterSearchTermsByUser();
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -132,7 +147,9 @@ onMounted(async () => {
       <div class="user-selector">
         <label for="selectUser">Select User:</label>
         <select v-model="selectedUser" id="selectUser">
-          <option value="">All Users</option>
+          <option v-if="auditorEmail" :value="auditorEmail">
+            {{ convertEmailToName(auditorEmail) }}
+          </option>
           <option
             v-for="userEmail in auditors"
             :key="userEmail"
@@ -141,21 +158,60 @@ onMounted(async () => {
             {{ convertEmailToName(userEmail.auditor) }}
           </option>
         </select>
-        <button @click="filterSearchTermsByUser">Apply</button>
+        <button @click="filterSearchTermsByUser(false)">Apply</button>
       </div>
     </section>
 
     <!-- Display Search Terms by User -->
-    <section
-      v-if="selectedUser && auditedTerms.length"
-      class="search-terms-by-user"
-    >
+    <div v-if="!auditedTerms.length && (selectedUser.auditor || auditorEmail)">
+      No search Terms found for the Auditor:
+      {{
+        selectedUser.auditor
+          ? convertEmailToName(selectedUser.auditor)
+          : auditorEmail
+          ? convertEmailToName(auditorEmail)
+          : ""
+      }}
+      in the selected period. Try increasing the date filter range.
+    </div>
+    <section v-if="auditedTerms.length" class="audited-terms">
       <h5>
-        Search Terms Audited by {{ convertEmailToName(selectedUser.auditor) }}
+        Audited Search Terms by
+        {{
+          selectedUser.auditor
+            ? convertEmailToName(selectedUser.auditor)
+            : auditorEmail
+            ? convertEmailToName(auditorEmail)
+            : ""
+        }}
       </h5>
-      <ul>
-        <li v-for="term in auditedTerms" :key="term">{{ term }}</li>
-      </ul>
+      <div class="audited-search-terms">
+        <div v-for="auditedTerm in auditedTerms" :key="auditedTerm._id">
+          <strong>{{ auditedTerm._id }}</strong>
+          <p class="searchterm-count">
+            Displaying {{ Math.min(auditedTerm.count, 30) }} out of
+            {{ auditedTerm.count }} audited search terms for
+            {{ auditedTerm._id }} results Auditing.
+          </p>
+          <div>
+            <p v-for="term in auditedTerm.audited_terms" :key="term">
+              {{ term }}
+            </p>
+          </div>
+
+          <p class="searchterm-count">
+            Page {{ auditorSearchTermPage + 1 }} out of
+            {{ Math.ceil(auditedTerm.count / 30) }}
+          </p>
+          <p class="searchterm-count" style="color: red">
+            Kindly excuse the button disabling logic for now. Will add the
+            support later!
+          </p>
+        </div>
+      </div>
+      <button v-if="auditedTerms" @click="filterSearchTermsByUser(true)">
+        See Next ➔
+      </button>
     </section>
 
     <section class="search-terms">
@@ -337,7 +393,22 @@ onMounted(async () => {
   border: rgb(240, 242, 246);
   border-right: 16px solid transparent;
 }
-
+button {
+  background-color: #0072ff;
+  color: white;
+  border-radius: 4px;
+  padding: 2px 10px;
+  border: none;
+  font-weight: 500;
+  height: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+button:disabled {
+  background-color: #adc9ec;
+  cursor: not-allowed;
+}
 .user-selector button {
   background-color: #0072ff;
   color: white;
@@ -351,5 +422,13 @@ onMounted(async () => {
 
 .user-selector button:hover {
   background-color: #0056c1;
+}
+.audited-search-terms {
+  display: flex;
+  justify-content: space-between;
+}
+.searchterm-count {
+  font-size: 13px;
+  color: #0072ff;
 }
 </style>
