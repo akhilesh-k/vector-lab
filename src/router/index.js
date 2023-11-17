@@ -4,6 +4,7 @@ import { useRouterMetaDataStore } from "@/store";
 import Products from "@/views/Products.vue";
 import Configure from "@/views/Configure.vue";
 import AuditHistory from "@/views/AuditHistory.vue";
+import AssignAudits from "@/views/AssignAudits.vue";
 import ReleaseNotes from "@/views/ReleaseNotes.vue";
 
 const router = createRouter({
@@ -45,6 +46,10 @@ const router = createRouter({
     {
       path: "/configure",
       component: Configure,
+    },
+    {
+      path: "/assign-audits",
+      component: AssignAudits,
     },
     {
       path: "/release-notes",

@@ -10,6 +10,21 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 1.5.0</h4>
+      <h5>17th November 2023</h5>
+      <p>Now you can see the audit results on the Audit History page.</p>
+      <ul>
+        <li>
+          Audit Results: You can see audited search terms on the audit history
+          page now.
+        </li>
+        <li>
+          Search audited search terms: You can search for audited search terms
+          by typing in the search bar available above the table! You know, for
+          Search!
+        </li>
+      </ul>
+
       <h4>Version 1.4.0</h4>
       <h5>14th November 2023</h5>
       <p>

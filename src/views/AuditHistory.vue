@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import DatePicker from "vue3-datepicker";
 
 const startDate = ref(null);
@@ -20,6 +20,19 @@ const topRelevantHybridSearchTerms = ref([]);
 const topIrrelevantLexicalSearchTerms = ref([]);
 const topIrrelevantHybridSearchTerms = ref([]);
 const auditorSearchTermPage = ref(0);
+const pageSize = 10;
+const currentPage = ref(0);
+const searchTerm = ref("");
+
+const auditRelevanceSet = ref(
+  JSON.parse(
+    localStorage.getItem(
+      `auditRelevanceSet_${formatDate(startDate.value)}_${formatDate(
+        endDate.value
+      )}`
+    )
+  ) || []
+);
 
 function formatDate(date) {
   const year = date.getFullYear();
@@ -27,6 +40,23 @@ function formatDate(date) {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+const displayedAuditRelevanceSet = computed(() => {
+  const startIndex = currentPage.value * pageSize;
+  const endIndex = startIndex + pageSize;
+  const filteredSet = auditRelevanceSet.value.filter((item) =>
+    item.searchTerm.toLowerCase().includes(searchTerm.value.toLowerCase())
+  );
+  return filteredSet.slice(startIndex, endIndex);
+});
+
+const showNextButton = computed(() => {
+  return currentPage.value * pageSize < auditRelevanceSet.value.length;
+});
+
+const showNextSet = () => {
+  currentPage.value++;
+};
+
 const applyDateFilter = async () => {
   try {
     const filterUrl = `${apiUrl}/fetch-auditors?start_date=${formatDate(
@@ -36,6 +66,7 @@ const applyDateFilter = async () => {
     const data = await response.json();
     auditors.value = data.auditors;
     filterSearchTermsByUser(false);
+    fetchAuditRelevanceSet();
   } catch (error) {
     console.error("Error:", error);
   }
@@ -46,6 +77,43 @@ const convertEmailToName = (email) => {
   return parts
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+};
+
+const fetchAuditRelevanceSet = async () => {
+  try {
+    const startDateFormat = formatDate(startDate.value);
+    const endDateFormat = formatDate(endDate.value);
+    const localStorageKey = `auditRelevanceSet_${startDateFormat}_${endDateFormat}`;
+
+    // Check if the data is already in local storage
+    const storedData = localStorage.getItem(localStorageKey);
+
+    if (storedData) {
+      // If data is in local storage, use it and update your state
+      const parsedData = JSON.parse(storedData);
+      auditRelevanceSet.value = parsedData;
+    } else {
+      // If data is not in local storage, make the API call
+      const response = await fetch(
+        `${apiUrl}/relevant_counts?start_date=${startDateFormat}&end_date=${endDateFormat}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Store the response in local storage
+      localStorage.setItem(localStorageKey, JSON.stringify(data));
+
+      // Update your state or do any other necessary tasks
+      auditRelevanceSet.value = data;
+    }
+  } catch (error) {
+    console.error("Error fetching audit relevance set:", error);
+    // Handle errors as needed
+  }
 };
 
 const filterSearchTermsByUser = async (isNextPage) => {
@@ -85,7 +153,6 @@ onMounted(async () => {
     );
     const auditorsData = await auditorsResponse.json();
     auditors.value = auditorsData.auditors;
-
     const searchTermsResponse = await fetch(`${apiUrl}/fetch-top-search-terms`);
     const searchTermsData = await searchTermsResponse.json();
     topRelevantLexicalSearchTerms.value =
@@ -97,6 +164,7 @@ onMounted(async () => {
     topIrrelevantHybridSearchTerms.value =
       searchTermsData.topIrrelevantHybridSearchTerms;
     filterSearchTermsByUser();
+    fetchAuditRelevanceSet();
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -215,6 +283,47 @@ onMounted(async () => {
       </div>
       <button v-if="auditedTerms" @click="filterSearchTermsByUser(true)">
         See Next ➔
+      </button>
+    </section>
+    <section>
+      <h4>Audited Search Terms - Relevance Set</h4>
+      <input
+        v-model="searchTerm"
+        type="text"
+        placeholder="Type a search term to filter the data in the table!"
+      />
+      <table class="auditor-table">
+        <thead>
+          <tr>
+            <th rowspan="2">Search Term</th>
+            <th colspan="2">Lexical</th>
+            <th colspan="2">Hybrid</th>
+            <th rowspan="2">Auditor</th>
+          </tr>
+          <tr>
+            <th>Relevant</th>
+            <th>Irrelevant</th>
+            <th>Relevant</th>
+            <th>Irrelevant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, index) in displayedAuditRelevanceSet" :key="index">
+            <td>{{ item.searchTerm }}</td>
+            <td>{{ item.relevantCountLexical }}</td>
+            <td>{{ item.irrelevantCountLexical }}</td>
+            <td>{{ item.relevantCountHybrid }}</td>
+            <td>{{ item.irrelevantCountHybrid }}</td>
+            <td>{{ convertEmailToName(item.auditor) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <button
+        @click="showNextSet"
+        v-if="showNextButton"
+        style="margin-top: 16px"
+      >
+        Show Next 50
       </button>
     </section>
 
@@ -430,6 +539,15 @@ button:disabled {
 .audited-search-terms {
   display: flex;
   justify-content: space-between;
+}
+input[type="text"] {
+  height: 32px;
+  border-radius: 4px;
+  background-color: rgb(240, 242, 246);
+  padding: 0px 8px;
+  box-sizing: border-box;
+  border: rgb(240, 242, 246);
+  width: 500px;
 }
 .searchterm-count {
   font-size: 13px;

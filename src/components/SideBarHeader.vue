@@ -33,6 +33,7 @@ const sideBarUrls = [
   { name: "Perform Audit", url: "audit" },
   { name: "Audit History", url: "audit-history" },
   { name: "Configure", url: "configure" },
+  { name: "Assign Audits", url: "assign-audits" },
   { name: "Release Notes", url: "release-notes" },
 ];
 const convertEmailToName = (email) => {
@@ -83,7 +84,7 @@ onBeforeUnmount(() => {
     </div>
     <footer class="sidebar-footer" v-show="!isCollapsed">
       <span v-if="auditorEmail">Hi {{ convertEmailToName(auditorEmail) }}</span>
-      <span>Vector Lab v1.4.0</span>
+      <span>Vector Lab v1.5.0</span>
     </footer>
   </div>
 </template>
