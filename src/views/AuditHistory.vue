@@ -323,7 +323,7 @@ onMounted(async () => {
         v-if="showNextButton"
         style="margin-top: 16px"
       >
-        Show Next 50
+        Show next 10 item
       </button>
     </section>
 
