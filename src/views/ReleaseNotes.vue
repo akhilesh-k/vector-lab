@@ -10,6 +10,15 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 1.6.0</h4>
+      <h5>6th December 2023</h5>
+      <p>Now we can compare the lexical, hybrid and pure vector results.</p>
+      <ul>
+        <li>
+          Select Vector Search in the lab page and now get the pure vector
+          results listed on the page!
+        </li>
+      </ul>
       <h4>Version 1.5.0</h4>
       <h5>17th November 2023</h5>
       <p>Now you can see the audit results on the Audit History page.</p>

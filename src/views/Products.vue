@@ -20,6 +20,7 @@ const debugMode = ref(false);
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
 const lexicalCallDone = ref(false);
 const hybridCallDone = ref(false);
+const vectorCallDone = ref(false);
 
 const auditMode = ref(
   isOnAuditRoute.value &&
@@ -28,18 +29,22 @@ const auditMode = ref(
 );
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
+const isVectorSearch = ref(true);
 const algo = ref("control");
 const algoOptions = ["control", "variant1", "variant2", "variant3", "variant4"];
 
 const lexicalProducts = ref([]);
 const hybridProducts = ref([]);
+const vectorProducts = ref([]);
 const includeNdcg = ref(false);
 
 const lexicalController = ref();
 const hybridController = ref();
+const vectorController = ref();
 
 const markAllRelevantLexical = ref(false);
 const markAllRelevantHybrid = ref(false);
+const markAllRelevantVector = ref(false);
 
 const lexicalMetaData = ref({
   numFound: 0,
@@ -47,6 +52,11 @@ const lexicalMetaData = ref({
   items: 0,
 });
 const hybridMetaData = ref({
+  numFound: 0,
+  responseTime: 0,
+  items: 0,
+});
+const vectorMetaData = ref({
   numFound: 0,
   responseTime: 0,
   items: 0,
@@ -70,6 +80,17 @@ const hybridHeading = computed(() => {
     } seconds`;
   } else {
     return `No hybrid results found. Search took ${responseTime} seconds`;
+  }
+});
+
+const vectorHeading = computed(() => {
+  const { numFound, responseTime, items } = vectorMetaData.value;
+  if (numFound != 0 && items != 0) {
+    return `Displaying ${items} pure Vector results out of ${numFound} products in ${
+      Math.round(responseTime * 100) / 100
+    } seconds`;
+  } else {
+    return `No pure vector results found. Search took ${responseTime} seconds`;
   }
 });
 
@@ -177,6 +198,20 @@ const submitAudit = (auditType) => {
       searchTerm: searchTerm.value,
     };
   }
+  if (auditType === "VECTOR") {
+    auditData = {
+      audits: vectorProducts.value.map((product) => ({
+        sku: product.sku,
+        relevance: product.relevance ? 1 : 0,
+        comment: product.comment,
+      })),
+      auditor: auditorEmail.value,
+      algo: algo.value,
+      searchType: "Vector",
+      pageNumber: page.value,
+      searchTerm: searchTerm.value,
+    };
+  }
   const apiUrl = "http://xsearch-solr-vector-2.qa2-sg.cld:5000/submit-audit";
 
   fetch(apiUrl, {
@@ -194,12 +229,17 @@ const submitAudit = (auditType) => {
     })
     .then((data) => {
       downloadXLSX(
-        auditType === "LEXICAL" ? lexicalProducts.value : hybridProducts.value,
+        auditType === "LEXICAL"
+          ? lexicalProducts.value
+          : auditType === "HYBRID"
+          ? hybridProducts.value
+          : vectorProducts.value,
         data,
         auditType
       );
       markAllRelevantHybrid.value = false;
       markAllRelevantLexical.value = false;
+      markAllRelevantVector.value = false;
     })
     .catch((error) => {
       console.error("Error while submitting the audit:", error);
@@ -213,6 +253,9 @@ const getProductsApi = (scope) => {
   if (hybridController.value) {
     hybridController.value.abort();
   }
+  if (vectorController.value) {
+    vectorController.value.abort();
+  }
 
   if (scope === "LEXICAL") {
     lexicalProducts.value = [];
@@ -221,6 +264,10 @@ const getProductsApi = (scope) => {
   if (scope === "HYBRID") {
     hybridProducts.value = [];
     hybridCallDone.value = false;
+  }
+  if (scope === "VECTOR") {
+    vectorProducts.value = [];
+    vectorCallDone.value = false;
   }
   if (searchTerm.value?.length) {
     const urlPrefix = "http://xsearch-solr-vector-2.qa2-sg.cld:5000/search";
@@ -239,17 +286,21 @@ const getProductsApi = (scope) => {
       updateCache: false,
       QUi58PyL: debugMode.value,
       userIdentifier: 500681720,
-      algo: algo.value,
     };
     if (scope === "HYBRID") {
       query.hybridQuery = isHybridSearch.value;
+    }
+    if (scope === "VECTOR") {
+      query.vectorQuery = isVectorSearch.value;
     }
     const urlConfig = {
       method: "GET",
       signal:
         scope === "LEXICAL"
           ? lexicalController.signal
-          : hybridController.signal,
+          : scope === "HYBRID"
+          ? hybridController.signal
+          : vectorController.signal,
     };
     const url = buildQuery(urlPrefix, query);
     if (scope === "LEXICAL") {
@@ -257,6 +308,9 @@ const getProductsApi = (scope) => {
     }
     if (scope === "HYBRID") {
       hybridController.value = new AbortController();
+    }
+    if (scope === "VECTOR") {
+      vectorController.value = new AbortController();
     }
     fetch(url, urlConfig)
       .then((res) => {
@@ -286,6 +340,16 @@ const getProductsApi = (scope) => {
             items: data?.products.length,
           };
         }
+        if (scope === "VECTOR") {
+          vectorCallDone.value = true;
+          vectorProducts.value = [];
+          vectorProducts.value = data?.products;
+          vectorMetaData.value = {
+            numFound: data?.numFound,
+            responseTime: data?.responseTime,
+            items: data?.products.length,
+          };
+        }
       })
       .catch((err) => {
         console.error("ERROR: Can't convert to JSON - ", err);
@@ -299,6 +363,9 @@ const getProducts = () => {
   }
   if (isHybridSearch.value) {
     getProductsApi("HYBRID");
+  }
+  if (isVectorSearch.value) {
+    getProductsApi("VECTOR");
   }
 };
 
@@ -486,6 +553,10 @@ watch(
         <label for="isHybrid"> Hybrid Search: </label>
         <input v-model="isHybridSearch" id="isHybrid" type="checkbox" />
       </div>
+      <div class="flex">
+        <label for="isHybrid"> Vector Search: </label>
+        <input v-model="isVectorSearch" id="isHybrid" type="checkbox" />
+      </div>
     </section>
     <section class="products-container">
       <div class="wrapper">
@@ -627,6 +698,76 @@ watch(
           </div>
         </div>
       </div>
+      <div class="wrapper" v-if="vectorCallDone && isVectorSearch">
+        <div v-if="vectorCallDone && isVectorSearch" class="flex-col">
+          {{ vectorHeading }}
+          <div v-if="auditMode" class="audit-header">
+            <div class="flex">
+              <label for="markAllRelevantVector"> Mark All Relevant: </label>
+              <input
+                v-model="markAllRelevantVector"
+                id="markAllRelevantVector"
+                type="checkbox"
+              />
+            </div>
+            <button @click="() => submitAudit('VECTOR')" class="button">
+              Submit Vector Audit
+            </button>
+          </div>
+        </div>
+        <div v-if="isVectorSearch" class="products hybrid">
+          <div
+            v-for="(product, index) in vectorProducts"
+            :key="index"
+            class="product"
+          >
+            <div class="card-meta">
+              <p class="rank">Rank: {{ product.position }}</p>
+              <p v-if="product.tag" class="tag" :id="product.tag">
+                {{
+                  product.tag === "TRENDING"
+                    ? "Paling top"
+                    : product.tag === "MANUAL_MERCHANDISED"
+                    ? "Pilihan Blibli"
+                    : ""
+                }}
+              </p>
+            </div>
+            <img :src="product.image" @click="goToPDP(product.url)" />
+            <p class="product-name">
+              {{ product.name }}
+            </p>
+            <p class="product-sku">
+              <strong>{{ product.sku }}</strong>
+            </p>
+            <p v-if="product.score">
+              Score: <span class="score">{{ product.score }}</span>
+            </p>
+            <p v-if="product.vectorBoost">
+              Vector score:
+              <span class="v-score">{{ product.vectorBoost }}</span>
+            </p>
+            <div v-if="auditMode" class="flex-40">
+              <label :for="'isRelevantVector' + index"> Relevant: </label>
+              <input
+                v-model="product.relevance"
+                :id="'isRelevantVector' + index"
+                type="checkbox"
+              />
+            </div>
+            <div v-if="auditMode" class="flex-col">
+              <!-- <label :for="'commentHybrid' + index"> Comment: </label> -->
+              <textarea
+                v-model="product.comment"
+                :id="'commentHybrid' + index"
+                rows="4"
+                cols="50"
+                placeholder="Enter comments"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 </template>
@@ -640,7 +781,7 @@ watch(
   outline: none;
 }
 .container {
-  padding: 0px 80px;
+  padding: 0px 0 0 80px;
   margin-top: 14px;
   width: 100%;
   height: 100%;
@@ -652,10 +793,22 @@ watch(
   align-items: center;
   gap: 16px;
 }
-.filters,
-.advanced-filters,
+
 .products,
 .products-container {
+  align-items: center;
+  width: 100%;
+  display: flex;
+  gap: 16px;
+}
+.filters {
+  align-items: center;
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  max-width: 900px;
+}
+.advanced-filters {
   align-items: center;
   width: 100%;
   display: flex;
@@ -880,5 +1033,15 @@ button {
 
 .clear-icon:hover {
   text-decoration: underline;
+}
+@media only screen and (max-width: 1540px) {
+  .product {
+    width: calc((100% - 102px) / 2);
+    border: 1px solid rgb(240, 242, 246);
+    border-radius: 8px;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0px 4px;
+  }
 }
 </style>

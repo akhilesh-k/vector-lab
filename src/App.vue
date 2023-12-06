@@ -8,9 +8,7 @@ import SideBarHeader from "./components/SideBarHeader.vue";
   <main>
     <SideBarHeader />
     <VectorLabHeader />
-    <router-view
-      style="width: 100vw; max-width: 1440px; box-sizing: border-box"
-    />
+    <router-view style="width: 100vw; box-sizing: border-box" />
   </main>
 </template>
 

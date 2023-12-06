@@ -40,7 +40,7 @@ const saveAuditorEmail = () => {
 
 <style scoped>
 .container {
-  padding: 0px 80px;
+  padding-left: 80px;
   margin-top: 24px;
   width: 100%;
   height: 100%;
@@ -68,5 +68,10 @@ input[type="text"] {
   box-sizing: border-box;
   border: rgb(240, 242, 246);
   width: 500px;
+}
+@media only screen and (min-width: 1540px) {
+  .container {
+    padding: 0 180px 0 80px;
+  }
 }
 </style>
