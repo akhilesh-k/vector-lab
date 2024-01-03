@@ -16,6 +16,7 @@ const page = ref(1);
 const topK = ref(800);
 const items = ref(40);
 const union = ref(500);
+const updateCache = ref(false);
 const debugMode = ref(false);
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
 const lexicalCallDone = ref(false);
@@ -30,7 +31,7 @@ const auditMode = ref(
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
 const isVectorSearch = ref(true);
-const algo = ref("control");
+const algo = ref("variant3");
 const algoOptions = ["control", "variant1", "variant2", "variant3", "variant4"];
 
 const lexicalProducts = ref([]);
@@ -283,7 +284,8 @@ const getProductsApi = (scope) => {
       channelId: "web",
       multiCateogory: true,
       intent: true,
-      updateCache: false,
+      updateCache: updateCache.value,
+      algo: algo.value,
       QUi58PyL: debugMode.value,
       userIdentifier: 500681720,
     };
@@ -398,6 +400,7 @@ watch(
     topK.value,
     union.value,
     debugMode.value,
+    updateCache.value,
     algo.value,
   ],
   () => {
@@ -417,6 +420,7 @@ watch(
     union.value,
     debugMode.value,
     algo.value,
+    updateCache.value,
   ],
   () => {
     if (isHybridSearch.value) {
@@ -485,15 +489,24 @@ watch(
       </div>
 
       <div class="filter-input">
-        <div v-if="isOnVectorRoute" class="flex-col">
-          <label for="vectorBoost"> Boost: </label>
+        <!-- <div v-if="isOnVectorRoute" class="flex-col">
+          <label for="vectorBoost">Max Boost: </label>
           <input
-            v-model="vectorBoost"
+            v-model="maxVectorBoost"
             id="vectorBoost"
             type="number"
-            placeholder="Vector boost"
+            placeholder="Min Vector boost"
           />
         </div>
+        <div v-if="isOnVectorRoute" class="flex-col">
+          <label for="vectorBoost">Min Boost: </label>
+          <input
+            v-model="minVectorBoost"
+            id="vectorBoost"
+            type="number"
+            placeholder="Max Vector boost"
+          />
+        </div> -->
         <div v-if="isOnVectorRoute" class="flex-col">
           <label for="page"> Page: </label>
           <input
@@ -527,6 +540,10 @@ watch(
               {{ algo }}
             </option>
           </select>
+        </div>
+        <div class="flex">
+          <label for="updateCache"> Cache: </label>
+          <input v-model="updateCache" id="updateCache" type="checkbox" />
         </div>
         <div class="flex">
           <label for="debugMode"> Debug: </label>
@@ -1042,6 +1059,9 @@ button {
     overflow: hidden;
     box-sizing: border-box;
     padding: 0px 4px;
+  }
+  input[type="text"] {
+    width: 510px;
   }
 }
 </style>
