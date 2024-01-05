@@ -72,7 +72,7 @@ const uploadVerifiedAuditCampaign = async () => {
     formData.append("campaignOwner", auditorEmail.value);
 
     const response = await fetch(
-      "http://127.0.0.1:8981/upload-audit-assignment",
+      "http://xsearch-solr-vector-2.qa2-sg.cld:5000/upload-audit-assignment",
       {
         method: "POST",
         body: formData,
