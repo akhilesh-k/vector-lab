@@ -10,6 +10,24 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 2.0.0</h4>
+      <h5>5th January 2023</h5>
+      <p>Create Audit campaigns and assign auditor by xlsx file upload.</p>
+      <ul>
+        <li>
+          Now we can create audit campaigns and assigna the auditor using the
+          <span. class="url" @click="pushToRoute('/assign-audits')"
+            >Assign Audit</span.
+          >
+          page in the Vector lab!
+        </li>
+      </ul>
+      <h4>Version 1.7.0</h4>
+      <h5>4th January 2023</h5>
+      <p>Use Variant 3 as the default algo.</p>
+      <ul>
+        <li>Vector lab now uses the variant3 as the default AB algo.</li>
+      </ul>
       <h4>Version 1.6.0</h4>
       <h5>6th December 2023</h5>
       <p>Now we can compare the lexical, hybrid and pure vector results.</p>

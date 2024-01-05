@@ -3,13 +3,24 @@ import FileUploadIcon from "../assets/icons/file-upload.svg";
 import CheckmarkIcon from "../assets/icons/checkmark.svg";
 import ExcelJS from "exceljs";
 import { ref } from "vue";
-
+import { useRouter } from "vue-router";
+const router = useRouter();
+const uploadedFile = ref(null);
 const uploadedFileName = ref(null);
 const fileUploaded = ref(false);
 const errorMessage = ref(null);
 const searchKeywords = ref([]);
+const searchLoads = ref([]);
+const searchClicks = ref([]);
+const ctr = ref([]);
+const c1CategoryCode = ref([]);
+const c2CategoryCode = ref([]);
+const c3CategoryCode = ref([]);
+const c3Name = ref([]);
+const c3Category = ref([]);
 const auditors = ref([]);
 const ifDataVerified = ref(false);
+const auditorEmail = ref(localStorage.getItem("auditorEmail"));
 
 const handleFileSelect = (event) => {
   const file = event.target.files[0];
@@ -24,6 +35,7 @@ const convertEmailToName = (email) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 };
+
 const handleDrop = (event) => {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
@@ -32,6 +44,7 @@ const handleDrop = (event) => {
   }
 };
 const randomSearchTerms = ref([]);
+
 const getRandomSearchTerms = () => {
   const totalSearchTerms = searchKeywords.value.length;
   const randomIndexes = Array.from({ length: 10 }, () =>
@@ -40,7 +53,42 @@ const getRandomSearchTerms = () => {
   randomSearchTerms.value = randomIndexes.map((index) => ({
     index: index + 2,
     searchTerm: searchKeywords.value[index],
+    c1CategoryCode: c1CategoryCode.value[index],
+    searchLoads: searchLoads.value[index],
+    searchClicks: searchClicks.value[index],
+    ctr: ctr.value[index],
+    c1CategoryCode: c1CategoryCode.value[index],
+    c2CategoryCode: c2CategoryCode.value[index],
+    c3CategoryCode: c3CategoryCode.value[index],
+    c3Name: c3Name.value[index],
+    c3Category: c3Category.value[index],
   }));
+};
+
+const uploadVerifiedAuditCampaign = async () => {
+  try {
+    const formData = new FormData();
+    formData.append("file", uploadedFile.value);
+    formData.append("campaignOwner", auditorEmail.value);
+
+    const response = await fetch(
+      "http://127.0.0.1:8981/upload-audit-assignment",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error:", errorData.error);
+    } else {
+      const responseData = await response.json();
+      ifDataVerified.value = !ifDataVerified.value;
+    }
+  } catch (error) {
+    console.error("Fetch Error:", error);
+  }
 };
 
 const handleFile = async (file) => {
@@ -58,27 +106,50 @@ const handleFile = async (file) => {
     await workbook.xlsx.load(file);
 
     // Assuming the first sheet is named "Assignment"
-    const sheet = workbook.getWorksheet("Assignment");
+    const sheet = workbook.getWorksheet("Audit");
 
     const data = [];
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber !== 1) {
-        // Skip the first row (header row)
         const rowData = {
           search_internal_keyword: row.getCell(1).value,
-          auditors: row.getCell(2).value,
+          search_loads: row.getCell(2).value,
+          search_clicks: row.getCell(3).value,
+          ctr: row.getCell(4).value,
+          c1CategoryCode: row.getCell(5).value,
+          c2CategoryCode: row.getCell(6).value,
+          c3CategoryCode: row.getCell(7).value,
+          c3_name: row.getCell(8).value,
+          c3_category: row.getCell(9).value,
+          auditors: row.getCell(10).value,
         };
         data.push(rowData);
 
         if (rowData.search_internal_keyword !== null) {
           searchKeywords.value.push(rowData.search_internal_keyword);
+          searchLoads.value.push(rowData.search_loads);
+          searchClicks.value.push(rowData.search_clicks);
+          ctr.value.push(rowData.ctr);
+          c1CategoryCode.value.push(rowData.c1CategoryCode);
+          c2CategoryCode.value.push(rowData.c2CategoryCode);
+          c3CategoryCode.value.push(rowData.c3CategoryCode);
+          c3Name.value.push(rowData.c3_name);
+          c3Category.value.push(rowData.c3_category);
         }
         if (rowData.auditors !== null) {
-          auditors.value.push(rowData.auditors);
+          if (
+            typeof rowData.auditors === "object" ||
+            rowData.auditors instanceof Object
+          ) {
+            auditors.value.push(rowData.auditors.text);
+          } else {
+            auditors.value.push(rowData.auditors);
+          }
         }
       }
     });
     getRandomSearchTerms();
+    uploadedFile.value = file;
     uploadedFileName.value = file.name;
     errorMessage.value = null;
     fileUploaded.value = true;
@@ -91,9 +162,6 @@ const handleFile = async (file) => {
 
 <template>
   <main class="container">
-    <h3 style="color: red">
-      Assign Audits - This is work in progress. Please avoid using this tab.
-    </h3>
     <section v-show="!fileUploaded" class="upload-section">
       <h1>Upload file</h1>
       <h3 style="color: #8e7cc4; margin-top: 0; font-weight: 400">
@@ -115,52 +183,134 @@ const handleFile = async (file) => {
         />
       </div>
     </section>
-    <div v-if="fileUploaded" class="file-read">
+    <div v-if="fileUploaded && !ifDataVerified" class="file-read">
       <div class="upload-alert">
-        <p>File read successfully</p>
+        <h3>File read successfully</h3>
+        <img :src="CheckmarkIcon" alt="" class="icon" />
       </div>
-      <p>{{ uploadedFileName }}</p>
+      <p style="color: #8e7cc4; font-weight: 600">{{ uploadedFileName }}</p>
     </div>
     <section v-if="!ifDataVerified">
-      <h4 v-if="searchKeywords.length && randomSearchTerms">
-        Verify your data before submitting:
-      </h4>
-      <button
-        v-if="searchKeywords.length && randomSearchTerm && !ifDataVerified"
-        style="background-color: green"
-        @click="ifDataVerified = !ifDataVerified"
-      >
-        Verify
-      </button>
       <div
         v-if="searchKeywords.length && randomSearchTerms"
-        class="data-verification-stage"
+        class="verification-bar"
+        style="background-color: orange"
       >
-        <div>
-          <div class="checklist">
-            <img :src="CheckmarkIcon" alt="" class="icon" />
-            <p>Checklist 1</p>
-          </div>
-          <p>Match the search terms and their Index in the excel sheet</p>
-          <div
-            v-for="randomSearchTerm in randomSearchTerms"
-            :key="randomSearchTerm"
+        <div class="verification-msg">
+          <h4 v-if="searchKeywords.length && randomSearchTerms">
+            Verify your data before submitting:
+          </h4>
+          <span v-if="searchKeywords.length && randomSearchTerms"
+            >Scroll to the bottom to submit the verification</span
           >
-            {{ randomSearchTerm.index }}
-            {{ randomSearchTerm.searchTerm }}
-          </div>
-        </div>
-        <div>
-          <div class="checklist">
-            <img :src="CheckmarkIcon" alt="" class="icon" />
-            <p>Checklist 2</p>
-          </div>
-          <p>Match the Auditor list</p>
-          <div v-for="auditor in auditors" :key="auditor">
-            {{ convertEmailToName(auditor) }}
-          </div>
         </div>
       </div>
+      <div
+        v-if="searchKeywords.length && randomSearchTerms.length"
+        class="data-verification-stage"
+      >
+        <div class="checklist-section">
+          <div class="checklist">
+            <img :src="CheckmarkIcon" alt="" class="icon" />
+            <h3>Match the search terms and their Index in the excel sheet</h3>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Idx</th>
+                <th>Search Term</th>
+                <th>Search Loads</th>
+                <th>Search Clicks</th>
+                <th>CTR</th>
+                <th>C1 Category Code</th>
+                <th>C2 Category Code</th>
+                <th>C3 Category Code</th>
+                <th>C3 Name</th>
+                <th>C3 Category</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="randomSearchTerm in randomSearchTerms"
+                :key="randomSearchTerm.index"
+              >
+                <td>{{ randomSearchTerm.index }}</td>
+                <td>{{ randomSearchTerm.searchTerm }}</td>
+                <td>{{ randomSearchTerm.searchLoads }}</td>
+                <td>{{ randomSearchTerm.searchClicks }}</td>
+                <td>{{ randomSearchTerm.ctr }}</td>
+                <td>{{ randomSearchTerm.c1CategoryCode }}</td>
+                <td>{{ randomSearchTerm.c2CategoryCode }}</td>
+                <td>{{ randomSearchTerm.c3CategoryCode }}</td>
+                <td>{{ randomSearchTerm.c3Name }}</td>
+                <td>{{ randomSearchTerm.c3Category }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="checklist-section">
+          <div class="checklist">
+            <img :src="CheckmarkIcon" alt="" class="icon" />
+            <h3>Auditor list</h3>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Auditor</th>
+                <th>Auditor Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="auditor in auditors" :key="auditor">
+                <td>{{ convertEmailToName(auditor) }}</td>
+                <td>{{ auditor }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div
+        v-if="searchKeywords.length && randomSearchTerms"
+        class="verification-bar"
+        style="background-color: #00c04b"
+      >
+        <div class="verification-msg">
+          <h4 v-if="searchKeywords.length && randomSearchTerms">
+            If all looks good in the tables above, click on verify to submit the
+            data
+          </h4>
+          <span v-if="searchKeywords.length && randomSearchTerms"
+            >Clicking on verify will submit the audit assignment file</span
+          >
+        </div>
+        <button
+          v-if="
+            searchKeywords.length && randomSearchTerms.length && !ifDataVerified
+          "
+          style="background-color: green"
+          @click="uploadVerifiedAuditCampaign"
+        >
+          Verify
+        </button>
+      </div>
+    </section>
+    <section
+      v-if="ifDataVerified"
+      class="verification-bar"
+      style="background-color: #0072ff"
+    >
+      <div>
+        <h3>Thank you for submitting</h3>
+        <span>The audit campaign has been created</span>
+      </div>
+      <button
+        style="background-color: white; color: black"
+        @click="router.push('/audit-history')"
+      >
+        Go back to Audit History
+      </button>
     </section>
   </main>
 </template>
@@ -171,6 +321,7 @@ const handleFile = async (file) => {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  margin-bottom: 80px;
 }
 .file-read {
   display: flex;
@@ -187,6 +338,7 @@ const handleFile = async (file) => {
 .upload-alert {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 .upload-section {
   display: flex;
@@ -224,6 +376,14 @@ button {
 .icon {
   width: 24px;
 }
+.data-verification-stage {
+  display: flex;
+  flex-direction: column;
+}
+.checklist-section {
+  display: flex;
+  flex-direction: column;
+}
 .checklist {
   display: flex;
   gap: 4px;
@@ -232,5 +392,34 @@ button {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+td,
+th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+.verification-bar {
+  margin: 32px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+  border-radius: 16px;
+  padding: 8px 16px 24px;
+  span {
+    font-size: 13px;
+    font-weight: 400;
+  }
 }
 </style>
