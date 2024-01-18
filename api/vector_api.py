@@ -33,11 +33,31 @@ mongo_client = MongoClient(
     "mongodb://xsearch_user:qW6ej1HAMh9c@central-mongo-v60-01.qa2-sg.cld:27017/xsearch?connectTimeoutMS=30000&socketTimeoutMS=30000&readPreference=secondaryPreferred")
 db = mongo_client["xsearch"]
 audit_collection = db["vector_ndcg_audits"]
-audit_campaign_collection = db["audit_campaign_collection"]
+audit_campaign_collection = db["vector_audit_campaigns"]
 
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
+
+
+@app.route('/get-audit-campaigns', methods=['GET'])
+@cross_origin()
+def get_audit_campaigns():
+    try:
+        # Fetching all audit campaigns from MongoDB
+        all_campaigns = list(audit_campaign_collection.find())
+
+        # Convert ObjectId to string for JSON serialization
+        for campaign in all_campaigns:
+            campaign['_id'] = str(campaign['_id'])
+
+            # Convert datetime object to string for JSON serialization
+            campaign['start_date'] = campaign['start_date'].isoformat()
+
+        return jsonify(all_campaigns)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 def get_search_milvus_res(vector, topK):
@@ -443,7 +463,7 @@ def fetch_audited_terms():
             {"$sort": {"_id": 1}},
             {"$project": {"_id": 1, "audited_terms": {"$slice": [
                 {"$setUnion": ["$audited_terms"]}, (page - 1) * per_page, per_page]},
-                          "count": {"$size": {"$setUnion": ["$audited_terms"]}}}}
+                "count": {"$size": {"$setUnion": ["$audited_terms"]}}}}
         ]
         result = list(audit_collection.aggregate(pipeline))
 
@@ -712,21 +732,22 @@ def search_products():
             relevant = False
             score = None
             vector_boost = None
+            milvus_score = None
             if debug_vector:
-                print(response.get("solrQuery"))
                 explanation_semi_summary = product.get("debugData").get(
                     "explanationSemiSummary")
+                milvusScaledScore = product.get("debugData").get(
+                    "milvusScaledScore")
+                milvusScore = product.get("debugData").get(
+                    "milvusScore")
                 if explanation_semi_summary is not None:
                     score = product.get("debugData").get("score")
-                    for element in explanation_semi_summary:
-                        if "ConstantScore" in element:
-                            # Use regular expressions to find and extract the number
-                            pattern = r"\d+\.\d+"
-                            match = re.search(pattern, element)
-                            if match:
-                                number = float(match.group(0))
-                                vector_boost = number
-                                break
+                if milvusScaledScore is not None:
+                    vector_boost = product.get("debugData").get(
+                        "milvusScaledScore")
+                if milvusScore is not None:
+                    milvus_score = product.get("debugData").get(
+                        "milvusScore")
             comment = '',
             is_paling = any("paling" in tag.lower() for tag in tags)
             is_trending = any("trending" in tag.lower() for tag in tags)
@@ -742,6 +763,7 @@ def search_products():
                 "comment": comment,
                 "score": score,
                 "vectorBoost": vector_boost,
+                "milvusScore": milvus_score
             }
             if is_pilihan_blibli:
                 products_items["tag"] = 'MANUAL_MERCHANDISED'

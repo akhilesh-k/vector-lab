@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import DatePicker from "vue3-datepicker";
+import { format } from "date-fns";
 
 const startDate = ref(null);
 const endDate = ref(null);
@@ -23,6 +24,7 @@ const auditorSearchTermPage = ref(0);
 const pageSize = 10;
 const currentPage = ref(0);
 const searchTerm = ref("");
+const auditCampaigns = ref({});
 
 const auditRelevanceSet = ref(
   JSON.parse(
@@ -77,6 +79,21 @@ const convertEmailToName = (email) => {
   return parts
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+};
+
+const fetchAuditCampaign = async () => {
+  try {
+    const response = await fetch(`${apiUrl}/get-audit-campaigns`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    auditCampaigns.value = data;
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching data:", error.message);
+    throw error; // Re-throw the error to allow handling it at the caller's level
+  }
 };
 
 const fetchAuditRelevanceSet = async () => {
@@ -145,6 +162,7 @@ const filterSearchTermsByUser = async (isNextPage) => {
 };
 
 onMounted(async () => {
+  fetchAuditCampaign();
   try {
     const auditorsResponse = await fetch(
       `${apiUrl}/fetch-auditors?start_date=${formatDate(
@@ -173,6 +191,37 @@ onMounted(async () => {
 
 <template>
   <main class="container">
+    <section v-if="auditCampaigns.length">
+      <h3>Live Audit Campaign</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Campaign ID</th>
+            <th>Auditors</th>
+            <th>Audit Size</th>
+            <th>Owner</th>
+            <th>Start Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="auditCampaign in auditCampaigns" :key="auditCampaign._id">
+            <td>{{ auditCampaign.campaign_id }}</td>
+            <td>
+              <ul>
+                <li v-for="auditor in auditCampaign.auditors" :key="auditor">
+                  {{ convertEmailToName(auditor) }}
+                </li>
+              </ul>
+            </td>
+            <td>{{ convertEmailToName(auditCampaign.owner) }}</td>
+            <td>{{ auditCampaign.start_date }}</td>
+            <td>{{ auditCampaign.audit_size }}</td>
+            <td>{{ auditCampaign.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
     <section class="header">
       <h3>Audit Reports and History</h3>
       <div class="filters">
@@ -552,5 +601,27 @@ input[type="text"] {
 .searchterm-count {
   font-size: 13px;
   color: #0072ff;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+/* Styling for the list of auditors */
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 4px;
 }
 </style>

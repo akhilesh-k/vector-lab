@@ -688,11 +688,17 @@ watch(
               <strong>{{ product.sku }}</strong>
             </p>
             <p v-if="product.score">
-              Score: <span class="score">{{ product.score }}</span>
+              Solr Score: <span class="score">{{ product.score }}</span>
             </p>
             <p v-if="product.vectorBoost">
-              Vector score:
+              Vector Boost:
               <span class="v-score">{{ product.vectorBoost }}</span>
+            </p>
+            <p v-if="product.milvusScore">
+              Milvus score:
+              <span class="v-score" style="color: blue">{{
+                product.milvusScore
+              }}</span>
             </p>
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantHybrid' + index"> Relevant: </label>
@@ -962,7 +968,7 @@ p {
 .v-score {
   color: rgb(246, 51, 102);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 span {
   background-color: rgb(240, 242, 246);

@@ -167,6 +167,10 @@ const handleFile = async (file) => {
       <h3 style="color: #8e7cc4; margin-top: 0; font-weight: 400">
         Upload the document containing Search terms and Auditors
       </h3>
+      <a style="padding-bottom: 8px" href="/search-audit.xlsx" download
+        >File Template</a
+      >
+
       <div @dragover.prevent @drop.prevent="handleDrop" class="upload-area">
         <img :src="FileUploadIcon" style="width: 64px" alt="" />
         <div v-if="!uploadedFileName" class="upload-details">
