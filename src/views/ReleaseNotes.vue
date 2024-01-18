@@ -10,6 +10,15 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 2.0.1</h4>
+      <h5>18th January 2023</h5>
+      <p>Milvus score in the Debug mode</p>
+      <ul>
+        <li>
+          We can now see the milvus score in the product card when debug mode is
+          enabled.
+        </li>
+      </ul>
       <h4>Version 2.0.0</h4>
       <h5>5th January 2023</h5>
       <p>Create Audit campaigns and assign auditor by xlsx file upload.</p>
