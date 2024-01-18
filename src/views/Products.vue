@@ -618,12 +618,11 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p v-if="product.score">
-              Score: <span class="score">{{ product.score }}</span>
-            </p>
-            <p v-if="product.vectorBoost">
-              Vector Boost:
-              <span class="v-score">{{ product.vectorBoost }}</span>
+            <p class="score" v-if="product.score">
+              Score:
+              <span class="score">{{
+                parseFloat(product.score).toFixed(3)
+              }}</span>
             </p>
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantLexical' + index"> Relevant: </label>
@@ -687,19 +686,25 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p v-if="product.score">
-              Solr Score: <span class="score">{{ product.score }}</span>
-            </p>
-            <p v-if="product.vectorBoost">
-              Vector Boost:
-              <span class="v-score">{{ product.vectorBoost }}</span>
-            </p>
-            <p v-if="product.milvusScore">
-              Milvus score:
-              <span class="v-score" style="color: blue">{{
-                product.milvusScore
+            <p class="score" v-if="product.score">
+              Solr Score:
+              <span class="score">{{
+                parseFloat(product.score).toFixed(3)
               }}</span>
             </p>
+            <p class="score" v-if="product.milvusScore">
+              Milvus score:
+              <span class="v-score" style="color: blue">{{
+                parseFloat(product.milvusScore).toFixed(5)
+              }}</span>
+            </p>
+            <p class="score" v-if="product.vectorBoost">
+              Vector Boost:
+              <span class="v-score">{{
+                parseFloat(product.vectorBoost).toFixed(5)
+              }}</span>
+            </p>
+
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantHybrid' + index"> Relevant: </label>
               <input
@@ -763,12 +768,17 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p v-if="product.score">
-              Score: <span class="score">{{ product.score }}</span>
+            <p class="score" v-if="product.score">
+              Score:
+              <span class="score">{{
+                parseFloat(product.score).toFixed(5)
+              }}</span>
             </p>
             <p v-if="product.vectorBoost">
               Vector score:
-              <span class="v-score">{{ product.vectorBoost }}</span>
+              <span class="v-score">{{
+                parseFloat(product.vectorBoost).toFixed(3)
+              }}</span>
             </p>
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantVector' + index"> Relevant: </label>
@@ -961,15 +971,14 @@ p {
   margin: 10px 0px;
 }
 .score {
-  color: rgb(9, 171, 59);
   font-size: 12px;
   font-weight: 500;
 }
 .v-score {
-  color: rgb(246, 51, 102);
-  font-size: 12px;
-  font-weight: 500;
+  color: rgb(9, 171, 59);
+  margin-bottom: 6px;
 }
+
 span {
   background-color: rgb(240, 242, 246);
   padding: 4px;
