@@ -10,8 +10,17 @@ const pushToRoute = (route) => {
   <main class="container">
     <h3>Release Notes</h3>
     <section class="release-note">
+      <h4>Version 2.1.0</h4>
+      <h5>22nd January 2024</h5>
+      <p>Record Solr and Milvus Debug data in the Audits</p>
+      <ul>
+        <li>
+          Now we are able to record the Solr and Milvus debug data for better
+          analysis of the Audited search terms.
+        </li>
+      </ul>
       <h4>Version 2.0.1</h4>
-      <h5>18th January 2023</h5>
+      <h5>18th January 2024</h5>
       <p>Milvus score in the Debug mode</p>
       <ul>
         <li>
@@ -20,7 +29,7 @@ const pushToRoute = (route) => {
         </li>
       </ul>
       <h4>Version 2.0.0</h4>
-      <h5>5th January 2023</h5>
+      <h5>5th January 2024</h5>
       <p>Create Audit campaigns and assign auditor by xlsx file upload.</p>
       <ul>
         <li>
@@ -32,7 +41,7 @@ const pushToRoute = (route) => {
         </li>
       </ul>
       <h4>Version 1.7.0</h4>
-      <h5>4th January 2023</h5>
+      <h5>4th January 2024</h5>
       <p>Use Variant 3 as the default algo.</p>
       <ul>
         <li>Vector lab now uses the variant3 as the default AB algo.</li>

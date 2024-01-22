@@ -13,11 +13,10 @@ const isOnVectorRoute = computed(
 const searchTerm = ref("");
 const vectorBoost = ref(3);
 const page = ref(1);
-const topK = ref(800);
+const topK = ref(100);
 const items = ref(40);
 const union = ref(500);
 const updateCache = ref(false);
-const debugMode = ref(false);
 const auditorEmail = ref(localStorage.getItem("auditorEmail") || "");
 const lexicalCallDone = ref(false);
 const hybridCallDone = ref(false);
@@ -28,6 +27,19 @@ const auditMode = ref(
     !isOnVectorRoute.value &&
     auditorEmail.value?.length > 0
 );
+
+const debugMode = ref(
+  isOnAuditRoute.value &&
+    !isOnVectorRoute.value &&
+    auditorEmail.value?.length > 0
+);
+
+const showScores = ref(
+  !isOnAuditRoute.value &&
+    isOnVectorRoute.value &&
+    auditorEmail.value?.length > 0
+);
+
 const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
 const isVectorSearch = ref(true);
@@ -177,6 +189,7 @@ const submitAudit = (auditType) => {
         sku: product.sku,
         relevance: product.relevance ? 1 : 0,
         comment: product.comment,
+        solrScore: product.score,
       })),
       auditor: auditorEmail.value,
       algo: algo.value,
@@ -191,6 +204,9 @@ const submitAudit = (auditType) => {
         sku: product.sku,
         relevance: product.relevance ? 1 : 0,
         comment: product.comment,
+        solrScore: product.score,
+        milvusScore: product.milvusScore,
+        milvusScoreScaled: product.vectorBoost,
       })),
       auditor: auditorEmail.value,
       algo: algo.value,
@@ -205,6 +221,7 @@ const submitAudit = (auditType) => {
         sku: product.sku,
         relevance: product.relevance ? 1 : 0,
         comment: product.comment,
+        milvusScore: product.score,
       })),
       auditor: auditorEmail.value,
       algo: algo.value,
@@ -463,6 +480,8 @@ watch(
   () => {
     if (route.meta.audit) {
       auditMode.value = true;
+      debugMode.value = true;
+      updateCache.value = false;
     }
     if (route.meta.vectorSearch) {
       auditMode.value = false;
@@ -545,6 +564,10 @@ watch(
           <label for="updateCache"> Cache: </label>
           <input v-model="updateCache" id="updateCache" type="checkbox" />
         </div>
+        <div class="flex" v-if="isOnAuditRoute">
+          <label for="showScores"> Show Score </label>
+          <input v-model="showScores" id="showScores" type="checkbox" />
+        </div>
         <div class="flex">
           <label for="debugMode"> Debug: </label>
           <input v-model="debugMode" id="debugMode" type="checkbox" />
@@ -618,12 +641,14 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p class="score" v-if="product.score">
-              Score:
-              <span class="score">{{
-                parseFloat(product.score).toFixed(3)
-              }}</span>
-            </p>
+            <div v-if="showScores">
+              <p class="score" v-if="product.score">
+                Score:
+                <span class="score">{{
+                  parseFloat(product.score).toFixed(3)
+                }}</span>
+              </p>
+            </div>
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantLexical' + index"> Relevant: </label>
               <input
@@ -686,24 +711,26 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p class="score" v-if="product.score">
-              Solr Score:
-              <span class="score">{{
-                parseFloat(product.score).toFixed(3)
-              }}</span>
-            </p>
-            <p class="score" v-if="product.milvusScore">
-              Milvus score:
-              <span class="v-score" style="color: blue">{{
-                parseFloat(product.milvusScore).toFixed(5)
-              }}</span>
-            </p>
-            <p class="score" v-if="product.vectorBoost">
-              Vector Boost:
-              <span class="v-score">{{
-                parseFloat(product.vectorBoost).toFixed(5)
-              }}</span>
-            </p>
+            <div v-if="showScores">
+              <p class="score" v-if="product.score">
+                Solr Score:
+                <span class="score">{{
+                  parseFloat(product.score).toFixed(3)
+                }}</span>
+              </p>
+              <p class="score" v-if="product.milvusScore">
+                Milvus score:
+                <span class="v-score" style="color: blue">{{
+                  parseFloat(product.milvusScore).toFixed(5)
+                }}</span>
+              </p>
+              <p class="score" v-if="product.vectorBoost">
+                Vector Boost:
+                <span class="v-score">{{
+                  parseFloat(product.vectorBoost).toFixed(5)
+                }}</span>
+              </p>
+            </div>
 
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantHybrid' + index"> Relevant: </label>
@@ -768,18 +795,21 @@ watch(
             <p class="product-sku">
               <strong>{{ product.sku }}</strong>
             </p>
-            <p class="score" v-if="product.score">
-              Score:
-              <span class="score">{{
-                parseFloat(product.score).toFixed(5)
-              }}</span>
-            </p>
-            <p v-if="product.vectorBoost">
-              Vector score:
-              <span class="v-score">{{
-                parseFloat(product.vectorBoost).toFixed(3)
-              }}</span>
-            </p>
+            <div v-if="showScores">
+              <p class="score" v-if="product.score">
+                Score:
+                <span class="score">{{
+                  parseFloat(product.score).toFixed(5)
+                }}</span>
+              </p>
+              <p v-if="product.vectorBoost">
+                Vector score:
+                <span class="v-score">{{
+                  parseFloat(product.vectorBoost).toFixed(3)
+                }}</span>
+              </p>
+            </div>
+
             <div v-if="auditMode" class="flex-40">
               <label :for="'isRelevantVector' + index"> Relevant: </label>
               <input
@@ -871,6 +901,7 @@ watch(
   display: flex;
   align-items: center;
   min-height: 100%;
+  width: max-content;
 }
 .flex-col {
   display: flex;

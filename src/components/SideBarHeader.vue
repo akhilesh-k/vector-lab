@@ -85,7 +85,7 @@ onBeforeUnmount(() => {
     <footer class="sidebar-footer" v-show="!isCollapsed">
       <span v-if="auditorEmail">Hi {{ convertEmailToName(auditorEmail) }}</span>
       <span style="font-size: 11px; font-weight: 500"
-        >Vector Lab v2.0.1 • Created by Akhilesh K
+        >Vector Lab v2.1.0 • Created by Akhilesh K
       </span>
     </footer>
   </div>
