@@ -562,12 +562,17 @@ watch(
         <div class="flex-col">
           <label for="algo">AB Algo:</label>
           <select v-model="algo" id="algo">
-            <option v-for="algo in algoOptions" :key="algo" :value="algo">
+            <option
+              v-for="algo in algoOptions"
+              :key="algo"
+              :value="algo"
+              :disabled="isOnAuditRoute"
+            >
               {{ algo }}
             </option>
           </select>
         </div>
-        <div class="flex">
+        <div class="flex" v-if="!isOnAuditRoute">
           <label for="updateCache"> Cache: </label>
           <input v-model="updateCache" id="updateCache" type="checkbox" />
         </div>
