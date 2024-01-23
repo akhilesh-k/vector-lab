@@ -44,7 +44,14 @@ const isLexicalSearch = ref(true);
 const isHybridSearch = ref(true);
 const isVectorSearch = ref(true);
 const algo = ref("variant3");
-const algoOptions = ["control", "variant1", "variant2", "variant3", "variant4"];
+const algoOptions = [
+  "control",
+  "variant1",
+  "variant2",
+  "variant3",
+  "variant4",
+  "variant5",
+];
 
 const lexicalProducts = ref([]);
 const hybridProducts = ref([]);
@@ -713,7 +720,7 @@ watch(
             </p>
             <div v-if="showScores">
               <p class="score" v-if="product.score">
-                Solr Score:
+                Score:
                 <span class="score">{{
                   parseFloat(product.score).toFixed(3)
                 }}</span>
