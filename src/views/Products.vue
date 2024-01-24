@@ -483,6 +483,20 @@ watch(
   }
 );
 watch(
+  () => markAllRelevantVector.value,
+  () => {
+    if (markAllRelevantVector.value) {
+      vectorProducts.value.forEach((product) => {
+        product.relevance = true;
+      });
+    } else {
+      vectorProducts.value.forEach((product) => {
+        product.relevance = false;
+      });
+    }
+  }
+);
+watch(
   () => route.meta,
   () => {
     if (route.meta.audit) {
@@ -1005,10 +1019,10 @@ input[type="checkbox"]:disabled {
 }
 .product-name {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  /* -webkit-line-clamp: 4; */
   -webkit-box-orient: vertical;
   overflow: hidden;
-  word-break: break-all;
+  word-break:keep-all;
 }
 p {
   margin: 10px 0px;
